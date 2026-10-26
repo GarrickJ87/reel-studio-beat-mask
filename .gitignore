@@ -1,0 +1,51 @@
+# secrets and local config (only .env.example is committed)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# caches and scratch (everything stays on the external drive)
+.cache/
+tmp/
+*.tmp
+*.log
+
+# media, frames and renders (use only your own footage; never commit it)
+media/
+frames/
+renders/
+output/
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.m4a
+*.aac
+*.flac
+*.png
+*.jpg
+*.jpeg
+*.npy
+*.npz
+
+# node (if a web UI is added)
+node_modules/
+dist/
+
+# OS and editor files
+._*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
