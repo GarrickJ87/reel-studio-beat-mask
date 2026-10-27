@@ -37,4 +37,4 @@ Meta built the event around its own tools. Muse Code takes isolated tasks on the
 
 | Date | Task | Branch | Result |
 |---|---|---|---|
-| Tue Oct 27 | Offline pytest suite (beats, envelope, segment, mock e2e) | muse/tests | 10 passed, 1 xfail; fully-off-frame mask_to_frame crash reported, not fixed |
+| Tue Oct 27 | Offline pytest suite (beats, envelope, segment, mock e2e) | muse/tests | 10 passed, 1 xfail; fully-off-frame mask_to_frame crash found by its test; fixed on main by Claude Code |

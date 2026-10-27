@@ -43,8 +43,6 @@ def test_mask_to_frame_clips_box_off_left_and_top():
     assert out.any(), "the visible part of the box should still paste something"
 
 
-@pytest.mark.xfail(strict=True, reason="box fully outside the frame crashes the paste "
-        "(ValueError: could not broadcast); reported to Claude Code, not fixed on this branch")
 def test_mask_to_frame_box_fully_outside_frame():
     rec = segment.parse_records(SAMPLE_LINE)[0][0]
     outside = dataclasses.replace(rec, bounds=dataclasses.replace(

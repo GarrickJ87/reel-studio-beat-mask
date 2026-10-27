@@ -30,7 +30,7 @@ class SegResult:
 def _empty_dir(d: Path) -> Path:
     d.mkdir(parents=True, exist_ok=True)
     for f in d.glob("*.png"):
-        f.unlink()
+        f.unlink(missing_ok=True)  # on exFAT, deleting a file also removes its ._ pair
     return d
 
 
@@ -157,6 +157,8 @@ def mask_to_frame(rec, w: int, h: int) -> np.ndarray:
     full = np.zeros((h, w), np.uint8)
     x0, y0 = max(left, 0), max(top, 0)
     x1, y1 = min(left + bw, w), min(top + bh, h)
+    if x1 <= x0 or y1 <= y0:  # box entirely off the frame: nothing to paste
+        return full
     full[y0:y1, x0:x1] = local[y0 - top:y1 - top, x0 - left:x1 - left]
     return full
 

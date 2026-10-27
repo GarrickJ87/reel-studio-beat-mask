@@ -25,3 +25,15 @@ H.264/AAC 1080×1920; web app runs the whole flow over its API.
 (glow halo blurred at quarter resolution; effects computed only in a box around the subject).
 First run of the day adds ~2 min of one-time librosa/numba warm-up. A 30 s clip will still take a few
 minutes to render — see handoff task 7.
+
+## Tue Oct 27 — tests and first live SAM call (Claude + Muse Code)
+
+**Built**
+- Smoke test passed against the live Model API: `sam-3.1` returned a mask (6.5% of frame).
+- Muse Code wrote the offline pytest suite on branch `muse/tests` (beats, envelope, segment, mock end to end). Merged to main.
+
+**Broke / fixed**
+- Muse's test found `mask_to_frame` crashing when the SAM box lies fully off the frame. Fixed: returns an empty mask.
+- On the exFAT external drive, clearing the masks folder raced with macOS `._` files (`FileNotFoundError`). Fixed with `unlink(missing_ok=True)`.
+
+**Next:** real 10-15 s clip through SAM with a tap, then the Odd Wilson track export.
