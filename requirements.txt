@@ -6,3 +6,4 @@ opencv-python==5.0.0.93
 requests>=2.32
 soundfile>=0.13
 meta-sam-parser>=0.0.6
+pytest>=8  # offline tests in tests/
