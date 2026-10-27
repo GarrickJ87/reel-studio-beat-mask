@@ -54,3 +54,15 @@ Solo developer working around a 4:00 AMâ€“12:45 PM shift. Sessions are short (2â
 | Mon Nov 2 | Feature freeze, record demo | 2-min demo exported |
 | Tue Nov 3 | README, submission, cleanup | Submitted |
 | Wed Nov 4 | Buffer only | Fixes only |
+
+## Current status (update at the end of every session)
+
+As of Tue Oct 27: the full loop is built and runs end to end with the offline mask
+(ingest, segment, beat map, glow/flash/stutter, 1080x1920 export, 4-step web app on localhost:8765).
+The plan's day-1 open question is answered: SAM 3.1 tracking runs on the hosted Model API and accepts
+point prompts, so tap-to-segment works with no GPU. Not yet run against the live API.
+
+Next single step: key into .env, run `.venv/bin/python scripts/sam_smoke_test.py`, then one real clip through the app.
+
+Where things are: code map in README.md; how SAM is called in docs/META-MODELS.md; task queue and
+who-does-what (Claude Code vs Muse Code) in docs/MUSE-HANDOFF.md; session history in docs/BUILD-LOG.md.
