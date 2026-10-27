@@ -99,7 +99,7 @@ def overlay_preview(frame_path: Path, mask_dir: Path, out: Path, frame_index: in
     m = _load_mask(mask_dir, frame_index, frame.shape[:2])
     if m is None:
         # first frame the subject appears on
-        pngs = sorted(mask_dir.glob("*.png"))
+        pngs = sorted(f for f in mask_dir.glob("*.png") if not f.name.startswith("._"))
         if not pngs:
             return None
         m = cv2.imread(str(pngs[0]), cv2.IMREAD_GRAYSCALE)

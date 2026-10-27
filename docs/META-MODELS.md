@@ -20,6 +20,7 @@ Source: Meta Model API docs at dev.meta.ai/docs (SAM overview, Segmenting with p
   so we key masks by the `<Nf>` marker, never by line order. Masks are **box-local** and base85; we decode with
   `decode_mask_to_raster`, resize to the box, and paste into a full 1080×1920 frame (`mask_to_frame`).
 - **Zero matches is valid** (empty output, `response.completed`). Treated as "subject not found", not a crash.
+- **Speed note:** the official parser decodes masks in pure Python (~13 s each on an Intel Mac); `beatmask/fastmask.py` is a bit-exact numba decoder swapped in at import.
 - **Limits:** MP4/MOV, H.264/H.265/MPEG-4 (no VP9/WebM); ≤15,000 frames; ≤16 tracked objects.
 - **Cost:** $0.20 per 1,000 video frames, 50-frame minimum per request. A 30 s clip at 30 fps = 900 frames ≈ $0.18.
   Image calls $2.50 per 1,000 images.

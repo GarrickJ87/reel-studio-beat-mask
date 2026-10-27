@@ -37,3 +37,14 @@ minutes to render — see handoff task 7.
 - On the exFAT external drive, clearing the masks folder raced with macOS `._` files (`FileNotFoundError`). Fixed with `unlink(missing_ok=True)`.
 
 **Next:** real 10-15 s clip through SAM with a tap, then the Odd Wilson track export.
+
+## Tue Oct 27 (later) — Step 2: SAM 3.1 tracks a video
+
+**Result:** `scripts/sam_smoke_test.py --video tmp/test_clip.mp4 --tap 540,930` -> subject tracked on 240/240 frames in 71 s; overlay `tmp/sam_smoke_video.png` shows the mask covering the whole synthetic figure, nothing on the background.
+
+**Broke / fixed**
+- Meta's `meta_sam_parser` decodes each mask in pure Python and re-encodes it to check it is canonical: ~13 s per mask on this Intel Mac, so ~1 hour for an 8 s clip. Wrote `beatmask/fastmask.py` (numba, same adaptive range coder, verified bit-exact against the reference) and swap it into the parser. ~0.02 s per mask. The canonical re-encode check is skipped; every other parser check still runs.
+- exFAT `._*` shadow files were picked up as masks by the smoke test and renderer. Now skipped.
+- `pytest` collected `scripts/sam_smoke_test.py`; added `pytest.ini` (`testpaths = tests`).
+
+**Next:** real 10-15 s clip + Odd Wilson track through the full pipeline (glow, then flash).

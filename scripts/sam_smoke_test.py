@@ -87,7 +87,7 @@ def video_test(sam, clip: Path, tap):
         print("FAIL  no masks came back for the tapped point.")
         return False
     first = media.first_frame(norm, work / "frame0.jpg")
-    m0 = sorted((work / "masks").glob("*.png"))[0]
+    m0 = sorted(f for f in (work / "masks").glob("*.png") if not f.name.startswith("._"))[0]
     out = overlay(cv2.imread(str(first)), [cv2.imread(str(m0), 0)], TMP / "sam_smoke_video.png")
     print(f"OK    tracked subject on {res.frames_with_mask}/{frames} frames in {res.seconds:.1f}s ({res.detail})")
     print(f"      overlay -> {out}")

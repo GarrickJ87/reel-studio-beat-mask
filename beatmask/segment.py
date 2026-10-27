@@ -15,7 +15,9 @@ import cv2
 import numpy as np
 import requests
 
-from . import config
+from . import config, fastmask
+
+fastmask.install()  # meta_sam_parser's pure-Python mask decode is ~13 s/mask here; this is bit-exact and ~0.02 s
 
 
 @dataclass
@@ -30,6 +32,8 @@ class SegResult:
 def _empty_dir(d: Path) -> Path:
     d.mkdir(parents=True, exist_ok=True)
     for f in d.glob("*.png"):
+        if f.name.startswith("._"):  # macOS shadow files on exFAT; they vanish with their pair
+            continue
         f.unlink(missing_ok=True)  # on exFAT, deleting a file also removes its ._ pair
     return d
 
