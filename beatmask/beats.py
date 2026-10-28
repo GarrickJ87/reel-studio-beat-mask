@@ -29,6 +29,41 @@ def _band_onsets(y, sr, fmin, fmax, threshold):
     return times, strength
 
 
+def _grid_score(hits, period, phase, tol=0.04):
+    """Fraction of hits that sit within tol seconds of the grid phase + k * period."""
+    if not len(hits):
+        return 0.0
+    off = (np.asarray(hits) - phase + period / 2) % period - period / 2
+    return float(np.mean(np.abs(off) <= tol))
+
+
+def grid_from_hits(hits, duration, tol=0.04):
+    """Beat grid implied by the kick+snare hits, or None when the hits aren't steady enough.
+
+    librosa's tracker can lock to the wrong tempo on sparse loops (120 BPM read as 80.75). The drum hits
+    are reliable, so search 60-180 BPM for the grid the most hits sit on (phase fitted per tempo).
+    """
+    hits = np.sort(np.asarray(hits, dtype=float))
+    if len(hits) < 4:
+        return None
+    best = None  # (score, -mean_abs_offset, period, phase)
+    for bpm in np.arange(60.0, 180.0, 0.1):
+        period = 60.0 / bpm
+        ang = 2 * np.pi * (hits % period) / period
+        phase = float((np.angle(np.mean(np.exp(1j * ang))) / (2 * np.pi)) % 1.0 * period)
+        off = (hits - phase + period / 2) % period - period / 2
+        score = float(np.mean(np.abs(off) <= tol))
+        cand = (score, -float(np.mean(np.abs(off))), period, phase)
+        if best is None or cand[:2] > best[:2]:
+            best = cand
+    if best is None or best[0] < 0.9:
+        return None
+    _, _, period, phase = best
+    start = phase - np.floor(phase / period + 1e-6) * period
+    grid = np.arange(start, duration + 1e-6, period)
+    return {"period": period, "beats": grid}
+
+
 def analyze(audio_path: Path, offset: float = 0.0, duration: float | None = None) -> dict:
     y, sr = librosa.load(str(audio_path), sr=22050, mono=True, offset=offset, duration=duration)
     if len(y) == 0:
@@ -39,9 +74,15 @@ def analyze(audio_path: Path, offset: float = 0.0, duration: float | None = None
     onsets = librosa.frames_to_time(onset_frames, sr=sr, hop_length=HOP)
     kicks, kick_str = _band_onsets(y, sr, 20, 150, threshold=0.25)
     snares, snare_str = _band_onsets(y, sr, 1500, 6000, threshold=0.25)
+    tempo = float(np.atleast_1d(tempo)[0])
+    # Trust the drum hits over the tracker when they form a clearly steadier grid.
+    hits = np.sort(np.concatenate([kicks, snares]))
+    grid = grid_from_hits(hits, len(y) / sr)
+    if grid is not None and _grid_score(hits, 60 / tempo, float(hits[0])) < 0.75:
+        beats, tempo = grid["beats"], 60 / grid["period"]
     r = lambda a: [round(float(t), 4) for t in a]
     return {
-        "tempo": round(float(np.atleast_1d(tempo)[0]), 2),
+        "tempo": round(float(tempo), 2),
         "duration": round(len(y) / sr, 3),
         "beats": r(beats),
         "onsets": r(onsets),

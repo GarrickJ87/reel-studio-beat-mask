@@ -48,3 +48,16 @@ minutes to render — see handoff task 7.
 - `pytest` collected `scripts/sam_smoke_test.py`; added `pytest.ini` (`testpaths = tests`).
 
 **Next:** real 10-15 s clip + Odd Wilson track through the full pipeline (glow, then flash).
+
+## Wed Oct 28 — real clip, tempo fix
+
+**Built**
+- Real clip: 6.8 s of Garrick (own footage, 4K 16:9 from a Panasonic, cut and cropped to 1080x1920) in `media/garrick_clip.mp4` (git-ignored).
+- SAM 3.1 tapped on the face at frame 0 tracks the whole person (head, shirt, hand) on 206/206 frames in ~40 s; background untouched.
+- Full pipeline on that clip + synthetic 120 BPM loop with `glow`: exports 1080x1920 H.264 + AAC in ~2.5 min total on the Intel Mac.
+- Tempo fix (task 4): `beats.grid_from_hits` fits a 60-180 BPM grid to the kick+snare hits and replaces the tracker's beats only when the tracker disagrees with the drums. 80.75 -> 120 BPM on the loop; beats land on 0, 0.5, 1.0 s within 30 ms. Kick/snare detection unchanged. Tests in `tests/test_tempo.py`. 14 tests pass.
+
+**Learned**
+- Subject is large and moves toward the camera in the start of the file; picked the 26-33 s window where the face and shirt are steady. Frame 0 of the cut is blurred (entering shot) and SAM still finds the person.
+
+**Next:** flash effect on the real clip, mask smoothing if the edge flickers, the real Odd Wilson track, demo cut.
