@@ -61,3 +61,12 @@ minutes to render — see handoff task 7.
 - Subject is large and moves toward the camera in the start of the file; picked the 26-33 s window where the face and shirt are steady. Frame 0 of the cut is blurred (entering shot) and SAM still finds the person.
 
 **Next:** flash effect on the real clip, mask smoothing if the edge flickers, the real Odd Wilson track, demo cut.
+
+## Wed Oct 28 (later) — first export with a real Odd Wilson track
+
+- Track: Odd Wilson, "Playing in the Hallway" (The Odd-Fi Blueberry Treatment), starting 15 s in; 117 BPM, 8 kicks + 5 snares in the 6.8 s window. Real drumming is looser than the test loop, so the tracker's beat grid is kept (the drum-hit grid is only used when it is clearly steadier).
+- Real clip + SAM 3.1 (tap on face, 206/206 frames) + glow on kicks / flash on snares exported at 1080x1920.
+- Check vs the original frames: mean change inside the mask is ~49 (glow, on kicks) and ~67 (flash, on snares) on hit frames vs ~4 between hits; the effect peaks 0-1 frames (<= 33 ms) after the hit.
+- SAM mask on the Intel Mac: full run (ingest, SAM, glow + flash renders) took ~6 min.
+
+**Next:** watch the exports for mask edge flicker, pick the cut for the demo, record the web app, submission text.
