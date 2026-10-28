@@ -6,6 +6,14 @@ The background never moves.
 
 Built for the Meta Global AI Developer Hackathon (Indie track, "Build for Your World").
 
+## What was built when (hackathon window: Oct 26 - Nov 4, 2026)
+
+- **Oct 25:** one setup-only commit (project brief, `.gitignore`, `.env.example`, requirements). No app code.
+- **Oct 27 onward:** all application code in this repo, written during the event: ingest, SAM 3.1 segmentation client, beat map, the three effects, renderer, web app, tests, docs.
+- This is a standalone project. No code from the existing Reel Studio product, including its Meta Vision slot, is copied in.
+- The sample clip is the author's own footage; the music is by Odd Wilson (the author).
+- Built by Garrick Jordan with Claude Code and Muse Code as assistants under his direction. See `docs/MUSE-LOG.md` for exactly where Meta's models and tools were used.
+
 ## How it works
 
 | Stage | What happens | Tech |

@@ -1,5 +1,8 @@
 # Demo shot list: what to record, in order
 
+Target: **3 minutes with voiceover** (the Participant Guide asks for a well-produced three-minute demo). It must show only work built Oct 26 - Nov 4, and no keys, `.env`, dashboard or account screens.
+The 7 scenes below are the spine (~2 min); add voiceover and one longer live run to reach about 3 minutes.
+
 Record screen + voice with macOS Cmd+Shift+5 (or QuickTime). Keep each take on its own so we can cut it together. No music while recording; it goes on at the end.
 
 | # | Scene | Record | Length |

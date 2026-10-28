@@ -5,5 +5,5 @@ numpy==2.3.5
 opencv-python==5.0.0.93
 requests>=2.32
 soundfile>=0.13
-meta-sam-parser>=0.0.6
+meta-sam-parser==0.1.0  # pinned; the fast numba decoder in beatmask/fastmask.py mirrors its mask codec
 pytest>=8  # offline tests in tests/
