@@ -52,4 +52,4 @@ scripts/    sam_smoke_test.py · make_test_media.py
 docs/       BUILD-LOG · META-MODELS · SETUP · MUSE-HANDOFF
 ```
 
-© 2026 Garrick Jordan. All rights reserved.
+© 2026 Garrick Jordan (Odd Wilson). Released under the MIT License, see `LICENSE`.
