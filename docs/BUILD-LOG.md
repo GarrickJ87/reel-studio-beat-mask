@@ -70,3 +70,12 @@ minutes to render — see handoff task 7.
 - SAM mask on the Intel Mac: full run (ingest, SAM, glow + flash renders) took ~6 min.
 
 **Next:** watch the exports for mask edge flicker, pick the cut for the demo, record the web app, submission text.
+
+## Wed Oct 28 (evening) — Step 8A: verification layer (Day 3 lesson)
+
+Day 3 (Agents 102): check the work before it ships, inside the step that ships it, so it cannot be skipped. Applied to Beat Mask:
+- `beatmask/verify.py`, called from `pipeline.export` (on by default). Layer 1, blocking: 1080x1920 H.264 + audio; subject present on >=90% of frames; background untouched (change outside the dilated mask <= 6 levels on >=95% of sampled frames); every claimed beat shows the effect inside the mask. Layer 2, measured from the frames: subject not lost mid-clip; mask does not flicker or jump. Layer 3: human sign-off, `python -m beatmask.verify signoff EXPORT.mp4` (refuses unless verification passed).
+- Failure = export refused with feedback, re-render with stronger temporal mask smoothing (vote over the last 1, then 2 frames); max 3 attempts, then `VerificationEscalation` for a person. No endless loop.
+- Real exports: glow 6/6 PASS, flash 6/6 PASS. Negative control: the glow export judged against the snare beats FAILS "effect lands on every claimed beat".
+- Stutter: beat check is SKIPPED (honestly reported) because a freeze is only measurable when the subject moves.
+- Not done: an LLM-as-judge layer (Muse Spark looking at sampled frames) - possible stretch, would add a Meta model.

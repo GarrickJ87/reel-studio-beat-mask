@@ -28,7 +28,7 @@ def _bbox(mask: np.ndarray, margin: int, shape) -> tuple[int, int, int, int]:
 
 
 def render(clip: Path, mask_dir: Path, track: Path, hits: list[float], effect: str, out: Path,
-           audio_offset: float = 0.0, decay: float | None = None, progress=None) -> Path:
+           audio_offset: float = 0.0, decay: float | None = None, progress=None, smooth: int = 0) -> Path:
     if effect not in effects.APPLY:
         raise ValueError(f"effect must be one of {effects.EFFECTS}")
     decay = decay or {"glow": 0.22, "flash": 0.16, "stutter": 0.20}[effect]
@@ -51,6 +51,7 @@ def render(clip: Path, mask_dir: Path, track: Path, hits: list[float], effect: s
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
 
     held, held_hit, last_hit = None, -1, -1
+    recent = []  # last `smooth` raw masks, for temporal majority smoothing
     i = 0
     try:
         while True:
@@ -59,6 +60,11 @@ def render(clip: Path, mask_dir: Path, track: Path, hits: list[float], effect: s
                 break
             t = i / fps
             m = _load_mask(mask_dir, i, frame.shape[:2])
+            if smooth and m is not None:
+                recent.append(m > 0)
+                recent[:] = recent[-(smooth + 1):]
+                votes = np.sum(recent, axis=0)
+                m = np.where(votes * 2 > len(recent), 255, 0).astype(np.uint8)
             env, hit_idx = effects.envelope(t, hits, decay=decay)
             if m is not None and m.any():
                 kw = {"hit_index": hit_idx}
