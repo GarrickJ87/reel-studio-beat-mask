@@ -34,7 +34,7 @@ Definition of done: a stranger goes from clip to exported video in under 2 minut
 - Claude Code is the only tool that writes to main. Codex reviews PRs and takes isolated tasks on its own branch. Antigravity tests the UI on a test branch. Gemini checks rendered MP4s. Bugs from other tools come back here as one pasted list.
 - Commit after every working step, and before handing the repo to any other tool.
 - Never commit API keys. Keys live in .env (gitignored); provide .env.example.
-- Use only the developer's own footage and Odd Wilson tracks — no copyrighted media in tests or the demo.
+- Use only the developer's own footage and Garrick Jordan tracks — no copyrighted media in tests or the demo.
 - Prefer the simplest thing that works. If a stage blocks for more than one session, cut scope and keep the loop alive.
 - All project files, media, renders and caches stay on /Volumes/Garrick Dri. Never write to the internal drive.
 

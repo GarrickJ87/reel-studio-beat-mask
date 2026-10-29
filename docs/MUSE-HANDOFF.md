@@ -30,7 +30,7 @@ Updated Tue Oct 27 2026 (Claude). Submission due Wed Nov 4, 8:00 PM Central. Tar
 - Put the key in `.env`, run `.venv/bin/python scripts/sam_smoke_test.py`.
 - Then on real footage: `.venv/bin/python scripts/sam_smoke_test.py --video <clip> --tap X,Y`
   (open `tmp/work/.../frame0.jpg` to pick X,Y, or just use the web app).
-- Pick 3 test clips (10–30 s, one clear subject, your own footage) and 2 Odd Wilson tracks.
+- Pick 3 test clips (10–30 s, one clear subject, your own footage) and 2 Garrick Jordan tracks.
 
 ### 1. Muse Code — tests (isolated, good first Muse task)
 Branch `muse/tests`. Write pytest tests, no network:

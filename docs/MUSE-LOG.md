@@ -13,7 +13,7 @@ Who did what is stated plainly: Claude Code (the builder) wrote and committed mo
 | Oct 27 | SAM 3.1 image call (`POST /v1/responses`, model `sam-3.1`) | 1 mask, 6.5% of frame: **milestone met** |
 | Oct 27 | SAM 3.1 video, point prompt, forward tracking, synthetic clip | 240/240 frames tracked in 71 s |
 | Oct 28 | SAM 3.1 video on Garrick's real clip (tap on face, frame 0) | 206/206 frames, head, shirt and hand covered, ~40 s |
-| Oct 28 | Full pipeline, real clip + Odd Wilson "Playing in the Hallway" | glow on kicks, flash on snares, 1080x1920 export |
+| Oct 28 | Full pipeline, real clip + Garrick Jordan "Playing in the Hallway" | glow on kicks, flash on snares, 1080x1920 export |
 
 How SAM 3.1 is used (details in `docs/META-MODELS.md`): file upload, then one request with the tap as a point prompt, streamed back as one mask per frame.
 Not used: Muse Spark (vibe to effect plan) is a stretch goal and is not built; it will only be claimed if it ships.

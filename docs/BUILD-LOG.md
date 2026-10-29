@@ -36,7 +36,7 @@ minutes to render — see handoff task 7.
 - Muse's test found `mask_to_frame` crashing when the SAM box lies fully off the frame. Fixed: returns an empty mask.
 - On the exFAT external drive, clearing the masks folder raced with macOS `._` files (`FileNotFoundError`). Fixed with `unlink(missing_ok=True)`.
 
-**Next:** real 10-15 s clip through SAM with a tap, then the Odd Wilson track export.
+**Next:** real 10-15 s clip through SAM with a tap, then the Garrick Jordan track export.
 
 ## Tue Oct 27 (later) — Step 2: SAM 3.1 tracks a video
 
@@ -47,7 +47,7 @@ minutes to render — see handoff task 7.
 - exFAT `._*` shadow files were picked up as masks by the smoke test and renderer. Now skipped.
 - `pytest` collected `scripts/sam_smoke_test.py`; added `pytest.ini` (`testpaths = tests`).
 
-**Next:** real 10-15 s clip + Odd Wilson track through the full pipeline (glow, then flash).
+**Next:** real 10-15 s clip + Garrick Jordan track through the full pipeline (glow, then flash).
 
 ## Wed Oct 28 — real clip, tempo fix
 
@@ -60,11 +60,11 @@ minutes to render — see handoff task 7.
 **Learned**
 - Subject is large and moves toward the camera in the start of the file; picked the 26-33 s window where the face and shirt are steady. Frame 0 of the cut is blurred (entering shot) and SAM still finds the person.
 
-**Next:** flash effect on the real clip, mask smoothing if the edge flickers, the real Odd Wilson track, demo cut.
+**Next:** flash effect on the real clip, mask smoothing if the edge flickers, the real Garrick Jordan track, demo cut.
 
-## Wed Oct 28 (later) — first export with a real Odd Wilson track
+## Wed Oct 28 (later) — first export with a real Garrick Jordan track
 
-- Track: Odd Wilson, "Playing in the Hallway" (The Odd-Fi Blueberry Treatment), starting 15 s in; 117 BPM, 8 kicks + 5 snares in the 6.8 s window. Real drumming is looser than the test loop, so the tracker's beat grid is kept (the drum-hit grid is only used when it is clearly steadier).
+- Track: Garrick Jordan, "Playing in the Hallway" (The Odd-Fi Blueberry Treatment), starting 15 s in; 117 BPM, 8 kicks + 5 snares in the 6.8 s window. Real drumming is looser than the test loop, so the tracker's beat grid is kept (the drum-hit grid is only used when it is clearly steadier).
 - Real clip + SAM 3.1 (tap on face, 206/206 frames) + glow on kicks / flash on snares exported at 1080x1920.
 - Check vs the original frames: mean change inside the mask is ~49 (glow, on kicks) and ~67 (flash, on snares) on hit frames vs ~4 between hits; the effect peaks 0-1 frames (<= 33 ms) after the hit.
 - SAM mask on the Intel Mac: full run (ingest, SAM, glow + flash renders) took ~6 min.
