@@ -9,6 +9,7 @@ Layer 3 (human): nothing is "approved" until Garrick signs off (`python -m beatm
 If a check fails the export is refused with feedback; pipeline.export retries (max 3, with stronger
 mask smoothing each time) and then escalates to the person instead of looping.
 """
+import hashlib
 import json
 import subprocess
 import sys
@@ -26,7 +27,8 @@ THRESH = {
     "bg_frames_ok": 0.95,      # fraction of sampled frames under bg_mean_max
     "hit_in_mask_min": 15.0,   # mean change inside the mask on a hit (glow / flash)
     "hit_vs_bg_ratio": 3.0,    # ... and at least this many times the background change
-    "hits_proven_min": 0.85,   # fraction of claimed hits that show the effect
+    "hits_proven_min": 1.0,    # every claimed hit must show the effect
+    "stutter_visible_ratio": 1.5,  # stutter: change in the hit window vs the median off-beat change
     "mask_frames_min": 0.90,   # fraction of frames with a mask (subject present)
     "max_gap_frames": 6,       # longest run of frames without a mask
     "area_jump_p95": 0.12,     # p95 of relative frame-to-frame mask area change
@@ -59,12 +61,12 @@ def _mask(mask_dir: Path, i: int):
 
 
 def check_format(export: Path, frames: int) -> dict:
-    r = subprocess.run([config.ffprobe(), "-v", "error", "-show_entries", "stream=codec_type,codec_name,width,height,duration",
+    r = subprocess.run([config.ffprobe(), "-v", "error", "-show_entries", "stream=codec_type,codec_name,width,height,duration:format=duration",
                         "-of", "json", str(export)], capture_output=True, text=True)
     info = json.loads(r.stdout or "{}").get("streams", [])
     v = next((s for s in info if s.get("codec_type") == "video"), {})
     a = next((s for s in info if s.get("codec_type") == "audio"), None)
-    dur = float(v.get("duration", 0) or 0)
+    dur = float(v.get("duration") or json.loads(r.stdout or "{}").get("format", {}).get("duration") or 0)
     problems = []
     if (v.get("width"), v.get("height")) != (W, H):
         problems.append(f"size {v.get('width')}x{v.get('height')}, need {W}x{H}")
@@ -80,9 +82,10 @@ def check_format(export: Path, frames: int) -> dict:
 def _stream_stats(orig_path, export_path, mask_dir, sample_every=2):
     """Walk both videos in lockstep at quarter resolution; keep only per-frame numbers (no frames in memory)."""
     co, ce = cv2.VideoCapture(str(orig_path)), cv2.VideoCapture(str(export_path))
+    fps = co.get(cv2.CAP_PROP_FPS) or config.FPS
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
     hw = (W // 4, H // 4)  # quarter resolution is plenty for change statistics
-    st = {"n": 0, "have": [], "area": [], "centroid": [], "in_change": {}, "bg_change": []}
+    st = {"fps": fps, "n": 0, "have": [], "area": [], "centroid": [], "in_change": {}, "bg_change": []}
     i = 0
     while True:
         ok1, fo = co.read(); ok2, fe = ce.read()
@@ -108,9 +111,10 @@ def _stream_stats(orig_path, export_path, mask_dir, sample_every=2):
     return st
 
 
-def analyze(orig_path, export_path, mask_dir, hits, effect, fps=config.FPS) -> list[dict]:
+def analyze(orig_path, export_path, mask_dir, hits, effect) -> list[dict]:
     """Return the list of check results (each {name, layer, pass|skip, detail})."""
     st = _stream_stats(orig_path, export_path, mask_dir)
+    fps = st["fps"]
     n, have, in_vals, bg_vals = st["n"], st["have"], st["in_change"], st["bg_change"]
     results = []
     masks_area, centroids = st["area"], st["centroid"]
@@ -124,26 +128,41 @@ def analyze(orig_path, export_path, mask_dir, hits, effect, fps=config.FPS) -> l
                               f"(mean {np.mean(bg_vals) if bg_vals else 0:.1f})"})
 
     bg_mean = max(float(np.mean(bg_vals)) if bg_vals else 0.0, 0.5)
-    if effect == "stutter":
+    in_clip = [t for t in hits if int(round(t * fps)) < n - 1]
+    if not in_clip:
         results.append({"name": "effect lands on every claimed beat", "layer": 1, "pass": None,
-                        "detail": "skipped for stutter: freeze is only measurable when the subject moves"})
-    else:
-        unproven, claimed = [], 0
-        for t in hits:
+                        "detail": "skipped: no beats inside the clip"})
+    elif effect == "stutter":
+        # The freeze only differs from the original when the subject moves, so judge it against the
+        # clip's own off-beat change: a stutter that changes nothing visible must not pass.
+        near = set()
+        for t in in_clip:
+            near.update(range(int(round(t * fps)), int(round(t * fps)) + 5))
+        off = [v for i, v in in_vals.items() if i not in near]
+        base = max(float(np.median(off)) if off else 0.0, 0.5)
+        weak = []
+        for t in in_clip:
             f0 = int(round(t * fps))
-            if f0 >= n - 1:
-                continue
+            window = [in_vals[j] for j in range(f0, min(f0 + 5, n)) if j in in_vals]
+            if not window or max(window) < THRESH["stutter_visible_ratio"] * base:
+                weak.append(round(t, 2))
+        ok = not weak
+        results.append({"name": "effect lands on every claimed beat", "layer": 1, "pass": ok,
+                        "detail": f"stutter visible on {len(in_clip) - len(weak)}/{len(in_clip)} beats "
+                                  f"(needs {THRESH['stutter_visible_ratio']}x the off-beat change)"
+                                  + (f"; not visible at {weak}" if weak else "")})
+    else:
+        unproven = []
+        for t in in_clip:
+            f0 = int(round(t * fps))
             window = [in_vals[j] for j in range(f0, min(f0 + 4, n)) if j in in_vals]
-            if not window:
-                continue  # subject not visible at this hit; counted by the presence check
-            claimed += 1
-            peak = max(window)
-            if peak < THRESH["hit_in_mask_min"] or peak < THRESH["hit_vs_bg_ratio"] * bg_mean:
+            peak = max(window) if window else 0.0
+            if not window or peak < THRESH["hit_in_mask_min"] or peak < THRESH["hit_vs_bg_ratio"] * bg_mean:
                 unproven.append(round(t, 2))
-        proven = (claimed - len(unproven)) / max(claimed, 1)
+        proven = (len(in_clip) - len(unproven)) / len(in_clip)
         results.append({"name": "effect lands on every claimed beat", "layer": 1,
-                        "pass": claimed > 0 and proven >= THRESH["hits_proven_min"],
-                        "detail": f"{claimed - len(unproven)}/{claimed} hits show the effect inside the mask"
+                        "pass": proven >= THRESH["hits_proven_min"],
+                        "detail": f"{len(in_clip) - len(unproven)}/{len(in_clip)} beats show the effect inside the mask"
                                   + (f"; unproven at {unproven}" if unproven else "")})
 
     # --- layer 2: judge-style ---
@@ -162,7 +181,18 @@ def analyze(orig_path, export_path, mask_dir, hits, effect, fps=config.FPS) -> l
                         "pass": p95 <= THRESH["area_jump_p95"] and cmax <= THRESH["centroid_jump_max"],
                         "detail": f"area change p95 {p95:.1%} (max {THRESH['area_jump_p95']:.0%}), "
                                   f"largest centroid jump {cmax:.0f}px (max {THRESH['centroid_jump_max']:.0f})"})
+    else:
+        results.append({"name": "mask does not flicker or slip", "layer": 2, "pass": None,
+                        "detail": "skipped: no two consecutive masks to compare"})
     return results
+
+
+def _sha256(path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def verify_export(clip, export, mask_dir, hits, effect) -> dict:
@@ -170,7 +200,7 @@ def verify_export(clip, export, mask_dir, hits, effect) -> dict:
     _, frames = _read(clip, every=10 ** 9)
     results = [{**check_format(Path(export), frames), "layer": 1}] + analyze(clip, export, mask_dir, hits, effect)
     failed = [r for r in results if r["pass"] is False]
-    return {"export": str(export), "effect": effect, "checked_seconds": round(time.time() - t0, 1),
+    return {"export": str(export), "sha256": _sha256(export), "effect": effect, "checked_seconds": round(time.time() - t0, 1),
             "passed": not failed, "failed": [r["name"] for r in failed], "checks": results,
             "signoff": "pending"}
 
@@ -200,6 +230,8 @@ def signoff(export: Path, who: str = "Garrick Jordan") -> Path:
     data = json.loads(rep.read_text())
     if not data.get("passed"):
         raise SystemExit("verification did not pass; cannot sign off. Fix the export first.")
+    if data.get("sha256") and data["sha256"] != _sha256(export):
+        raise SystemExit("this file changed after it was verified; re-export it so it is verified again")
     data["signoff"] = {"by": who, "at": time.strftime("%Y-%m-%d %H:%M:%S"), "approved": True}
     rep.write_text(json.dumps(data, indent=1))
     return rep

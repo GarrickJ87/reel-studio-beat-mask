@@ -12,6 +12,9 @@ from pathlib import Path
 from . import beats, config, effects, media, render, segment, verify
 
 
+MAX_ATTEMPTS = 3  # verification: first render + two retries with stronger smoothing, then escalate
+
+
 class Project:
     """One working folder per run: tmp/work/<name>/ holding every intermediate file."""
 
@@ -60,21 +63,19 @@ def segment_subject(p: Project, x: int, y: int, kind: str = "auto", progress=Non
 
 
 def export(p: Project, effect: str, drive: str | None = None, out: Path | None = None,
-           progress=None, verify_export: bool = True, max_retries: int = 3) -> Path:
-    """Render + export. With verification on (default) the export is checked before it is returned:
-    on failure it is re-rendered with stronger mask smoothing (max `max_retries` attempts), then escalated."""
+           progress=None) -> Path:
+    """Render + export. The export is always verified before it is returned (there is no switch to skip it):
+    on failure it is re-rendered with stronger mask smoothing (MAX_ATTEMPTS attempts), then escalated."""
     st = p.state()
     bm = json.loads(p.beatmap.read_text())
     drive = drive or effects.DEFAULT_DRIVE[effect]
     hits = beats.hits_for(bm, drive)
     out = out or p.dir / f"beatmask_{effect}_{int(time.time())}.mp4"
-    report, attempts = None, (max_retries if verify_export else 1)
-    for attempt in range(attempts):
+    report = None
+    for attempt in range(MAX_ATTEMPTS):
         smooth = attempt  # attempt 1: raw masks, 2: vote over 2 frames, 3: vote over 3 frames
         render.render(p.clip, p.masks, Path(st["track_src"]), hits, effect, out,
                       audio_offset=st.get("track_offset", 0.0), progress=progress, smooth=smooth)
-        if not verify_export:
-            break
         report = verify.verify_export(p.clip, out, p.masks, hits, effect)
         report.update(attempt=attempt + 1, smoothing_frames=smooth)
         Path(str(out) + ".verify.json").write_text(json.dumps(report, indent=1))
@@ -84,7 +85,7 @@ def export(p: Project, effect: str, drive: str | None = None, out: Path | None =
     else:
         raise verify.VerificationEscalation(report)
     p.save_state(last_export=str(out), effect=effect, drive=drive,
-                 verified=bool(report and report["passed"]), signoff="pending")
+                 verified=True, signoff="pending")
     return out
 
 
@@ -100,6 +101,8 @@ def main():
     ap.add_argument("--name", default="cli")
     ap.add_argument("--out", type=Path)
     a = ap.parse_args()
+    if a.out is not None and not a.out.resolve().is_relative_to(config.ROOT):
+        ap.error(f"--out must stay inside the project folder ({config.ROOT})")
     p = Project(a.name)
     say = lambda s: print(f"[beatmask] {s}", flush=True)
     say("1/4 ingest + beat map"); st = ingest(p, a.clip, a.track, a.track_offset)
