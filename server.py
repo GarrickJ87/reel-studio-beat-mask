@@ -136,7 +136,10 @@ class H(BaseHTTPRequestHandler):
                 def go():
                     out = pipeline.export(PROJECT, eff, drive, progress=prog)
                     PROJECT.save_state(last_export_name=out.name)
-                    return out.name
+                    r = json.loads(Path(str(out) + ".verify.json").read_text())
+                    checks = [c for c in r["checks"] if c["pass"] is not None]
+                    ok = sum(1 for c in checks if c["pass"])
+                    return f"{out.name} · verified {ok}/{len(checks)} checks (attempt {r['attempt']}) · sign-off pending"
                 run_job("export", go)
             else:
                 return self._json({"error": "not found"}, 404)
