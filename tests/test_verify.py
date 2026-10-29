@@ -25,17 +25,21 @@ SYNTH = ROOT / "tmp" / "verify-synth"
 
 
 def _probe_cv2_h264():
-    """True when stock cv2.VideoCapture can open an H.264 MP4 in this env."""
+    """True when stock cv2.VideoCapture can read an H.264 MP4 in this env.
+
+    The sample is made with the ffmpeg CLI: OpenCV's own VideoWriter cannot write MP4 in this build,
+    which says nothing about reading (the app reads H.264 with cv2 everywhere).
+    """
     import cv2 as _cv
     probe = Path(tempfile.gettempdir()) / "cv2_h264_probe.mp4"
     try:
-        vw = _cv.VideoWriter(str(probe), _cv.VideoWriter_fourcc(*"mp4v"), 30, (64, 48))
-        vw.write(np.zeros((48, 64, 3), np.uint8))
-        vw.release()
+        subprocess.run([config.ffmpeg(), "-y", "-loglevel", "error", "-f", "lavfi", "-i",
+                        "color=c=gray:s=64x48:d=0.2", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(probe)],
+                       check=True)
         cap = _cv.VideoCapture(str(probe))
-        ok = cap.isOpened()
+        ok = cap.isOpened() and cap.read()[0]
         cap.release()
-        return ok
+        return bool(ok)
     except Exception:
         return False
     finally:

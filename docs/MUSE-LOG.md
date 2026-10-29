@@ -29,7 +29,13 @@ Not used: Muse Spark (vibe to effect plan) is a stretch goal and is not built; i
 | Oct 27 14:23 | Claude reviewed the branch, merged it to `main`, fixed the bug (`0304077`); test now passes | 11 tests green |
 | Oct 28 | Muse's suite grew to 14 tests with the tempo tests (Claude) | 14 passed |
 
-Muse Code's contribution: the offline test suite, and the bug it found. Everything else in the app was built by Claude Code.
+| Oct 28 | **Muse Code as reviewer** (Day 3: a second session with review-only access), headless `muse exec` in a detached worktree, on the new export verification layer | ~20 findings, one line each; it edited nothing (worktree clean afterwards) |
+| Oct 28 | Claude applied the valid findings on `main` (`122ff06`): removed the switch that let an export skip verification, fixed retries at 3, bound sign-off to the export's SHA-256, required every claimed beat, measured stutter instead of skipping it, used the clip's real fps, kept `--out` inside the project | all three real exports still pass the stricter checks |
+| Oct 28 | Findings not taken, with reasons: the dilation kernel is already the right size at quarter resolution; a sign-off gate on web downloads would break the clip-to-export flow; the centroid limit (90 px) is above the worst jump measured on the real clip (46 px) | recorded here |
+| Oct 28 | **Muse Code task 2**, branch `muse/verify-tests` (brief `docs/MUSE-TASK-verify-tests.md`): 11 offline tests for `beatmask/verify.py` and the render smoothing (`b791162`) | 11 passed, no app code touched |
+| Oct 28 | Claude's review of task 2: Muse's tests replaced `cv2.VideoCapture` with an ffmpeg-pipe fake because a probe said OpenCV can't read H.264 here. The probe was wrong (it wrote the sample with OpenCV's VideoWriter, which can't write MP4 in this build; reading works). Fixed the probe to make the sample with ffmpeg, so the real reader is tested. Merged (`549c3d3`) | 11/11 still pass on the real code; full suite 25 passed |
+
+Muse Code's contribution so far: two offline test suites (the first found a real crash), and a review-only pass whose findings hardened the export verification layer. The rest of the app was built by Claude Code under Garrick's direction.
 
 ## Muse (chat assistant) reviews
 
