@@ -37,6 +37,22 @@ Not used: Muse Spark (vibe to effect plan) is a stretch goal and is not built; i
 
 Muse Code's contribution so far: two offline test suites (the first found a real crash), and a review-only pass whose findings hardened the export verification layer. The rest of the app was built by Claude Code under Garrick's direction.
 
+## Meta workshop (Day 2 + Day 3), built with Muse Code
+
+Repo `meta-models/legal-agent-workshop`, run on Garrick's Mac (separate from Beat Mask; kept here as Muse/Model API evidence). Muse Code was started from `agent/` only, with the HANDBOOK 1.7 ground rules as its first message each session, then the HANDBOOK prompts, one at a time.
+
+| When | What | Result |
+|---|---|---|
+| Oct 28 | Session 1, Muse Code: plan the agent loop (no code), then build `legal_agent/loop.py` | only `loop.py` changed; workshop offline tests OK |
+| Oct 28 | Session 1 run, `muse-spark-1.3` via the Model API (`run-20261029T004734Z-f97797`) | 22 turns, 6-item checklist, 21 documents read, 11 facts, memo filed **unverified** |
+| Oct 28 | Session 2, Muse Code: build the memo rules (`verification/verify_memo.py`) and the checklist check (`verification/verify_checklist.py`) | verification tests 58 OK |
+| Oct 28 | Verify the Session 1 work | memo FAIL (2 unsupported claims); checklist FAIL, 50% ground-truth coverage |
+| Oct 28 | Continue from the checklist with verification on (`run-20261029T010752Z-538a77`) | checklist refused, revised to 83%; memo refused 3 times, escalated to a person; privileged document flagged and not cited |
+| Oct 28 | Garrick replied to the escalation (R1) as reviewer, the agent refiled | memo passed the memo rules and the claims check |
+| Oct 28 | **Garrick signed off as the attorney** in the Agent Console | run **done**, memo **approved** |
+
+The pattern Beat Mask copies from this: checks inside the step that ships the work (not optional tools), max 3 refusals then a person, human sign-off last.
+
 ## Muse (chat assistant) reviews
 
 The Muse chat assistant did a code review and account checks on Oct 27, recorded in the "flush-out package" (public repo state, dashboard balance, form status). I did not redo those checks; I used them as stated and verified the local pieces myself.
