@@ -11,7 +11,7 @@ Built for the Meta Global AI Developer Hackathon (Indie track, "Build for Your W
 - **Oct 25:** one setup-only commit (project brief, `.gitignore`, `.env.example`, requirements). No app code.
 - **Oct 27 onward:** all application code in this repo, written during the event: ingest, SAM 3.1 segmentation client, beat map, the three effects, renderer, web app, tests, docs.
 - This is a standalone project. No code from the existing Reel Studio product, including its Meta Vision slot, is copied in.
-- The sample clip is the author's own footage; the music is by Odd Wilson (the author).
+- The sample clip and the music are the author's own (Garrick Jordan).
 - Built by Garrick Jordan with Claude Code and Muse Code as assistants under his direction. See `docs/MUSE-LOG.md` for exactly where Meta's models and tools were used.
 
 ## How it works
@@ -52,4 +52,4 @@ scripts/    sam_smoke_test.py · make_test_media.py
 docs/       BUILD-LOG · META-MODELS · SETUP · MUSE-HANDOFF
 ```
 
-© 2026 Garrick Jordan (Odd Wilson). Released under the MIT License, see `LICENSE`.
+© 2026 Garrick Jordan. Released under the MIT License, see `LICENSE`.
