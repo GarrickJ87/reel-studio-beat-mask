@@ -161,8 +161,9 @@ async function poll() {
         busy = false; step(2, 'done'); step(3, 'on'); step(4, 'on'); $('dot').style.display = 'none';
         showImg('/work/mask_preview.jpg'); msg(j.message); $('b2').disabled = false; $('b4').disabled = false;
       } else if (j.stage === 'export:done') {
-        busy = false; step(4, 'done'); $('b4').disabled = false; showVid('/work/' + j.message);
-        $('dlwrap').innerHTML = `<a class="dl" href="/work/${j.message}?dl=1">Download ${j.message}</a>`; msg('Done.');
+        const f = s.state.last_export_name;
+        busy = false; step(4, 'done'); $('b4').disabled = false; showVid('/work/' + f);
+        $('dlwrap').innerHTML = `<a class="dl" href="/work/${f}?dl=1">Download ${f}</a>`; msg(j.message);
       }
     }
     if (busy && j.progress > 0 && !j.error) msg(`${j.stage}… ${Math.round(j.progress * 100)}%`);
