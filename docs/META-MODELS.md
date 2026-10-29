@@ -39,4 +39,6 @@ Meta built the event around its own tools. Muse Code takes isolated tasks on the
 | Date | Task | Branch | Result |
 |---|---|---|---|
 | Tue Oct 27 | Offline pytest suite (beats, envelope, segment, mock e2e) | muse/tests | 10 passed, 1 xfail; fully-off-frame mask_to_frame crash found by its test; fixed on main by Claude Code |
-| Thu Oct 29 | Offline pytest suite for the export verification layer (verify.py) | muse/verify-tests | 11 passed: check_format (pass/wrong-size/no-audio), verify_export pass + 4 named-check failures, signoff refuse/approve, render smooth=2 hole fill |
+| Wed Oct 28 | Offline pytest suite for the export verification layer (verify.py) | muse/verify-tests | 11 passed: check_format (pass/wrong-size/no-audio), verify_export pass + 4 named-check failures, signoff refuse/approve, render smooth=2 hole fill |
+| Wed Oct 28 | Review-only pass on the export verification layer (verify.py, pipeline.export, render smoothing, server) | detached worktree, no edits | ~20 findings; the valid ones applied on main by Claude Code in 122ff06 (see MUSE-LOG.md) |
+| Wed Oct 28 | Meta workshop: built the agent loop and both verification checks (HANDBOOK prompts, from agent/) | legal-agent-workshop | Session 1 memo filed; Session 2 run signed off by Garrick, status done (see MUSE-LOG.md) |
