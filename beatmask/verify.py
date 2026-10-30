@@ -20,6 +20,7 @@ import cv2
 import numpy as np
 
 from . import config
+from .render import temporal_vote
 
 W, H = config.OUT_W, config.OUT_H
 THRESH = {
@@ -79,19 +80,21 @@ def check_format(export: Path, frames: int) -> dict:
     return {"name": "format 1080x1920 H.264 with audio", "pass": not problems, "detail": "; ".join(problems) or "ok"}
 
 
-def _stream_stats(orig_path, export_path, mask_dir, sample_every=2):
+def _stream_stats(orig_path, export_path, mask_dir, sample_every=2, smooth=0):
     """Walk both videos in lockstep at quarter resolution; keep only per-frame numbers (no frames in memory)."""
     co, ce = cv2.VideoCapture(str(orig_path)), cv2.VideoCapture(str(export_path))
     fps = co.get(cv2.CAP_PROP_FPS) or config.FPS
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
     hw = (W // 4, H // 4)  # quarter resolution is plenty for change statistics
     st = {"fps": fps, "n": 0, "have": [], "area": [], "centroid": [], "in_change": {}, "bg_change": []}
-    i = 0
+    i, recent = 0, []
     while True:
         ok1, fo = co.read(); ok2, fe = ce.read()
         if not (ok1 and ok2):
             break
         m = _mask(mask_dir, i)
+        if smooth and m is not None:  # judge the same voted masks the render drew with
+            m = temporal_vote(recent, m.astype(np.uint8) * 255, smooth) > 0
         m = None if m is None else cv2.resize(m.astype(np.uint8), hw, interpolation=cv2.INTER_NEAREST) > 0
         present = m is not None and bool(m.any())
         st["have"].append(present)
@@ -111,9 +114,9 @@ def _stream_stats(orig_path, export_path, mask_dir, sample_every=2):
     return st
 
 
-def analyze(orig_path, export_path, mask_dir, hits, effect) -> list[dict]:
+def analyze(orig_path, export_path, mask_dir, hits, effect, smooth=0) -> list[dict]:
     """Return the list of check results (each {name, layer, pass|skip, detail})."""
-    st = _stream_stats(orig_path, export_path, mask_dir)
+    st = _stream_stats(orig_path, export_path, mask_dir, smooth=smooth)
     fps = st["fps"]
     n, have, in_vals, bg_vals = st["n"], st["have"], st["in_change"], st["bg_change"]
     results = []
@@ -195,10 +198,10 @@ def _sha256(path) -> str:
     return h.hexdigest()
 
 
-def verify_export(clip, export, mask_dir, hits, effect) -> dict:
+def verify_export(clip, export, mask_dir, hits, effect, smooth: int = 0) -> dict:
     t0 = time.time()
     _, frames = _read(clip, every=10 ** 9)
-    results = [{**check_format(Path(export), frames), "layer": 1}] + analyze(clip, export, mask_dir, hits, effect)
+    results = [{**check_format(Path(export), frames), "layer": 1}] + analyze(clip, export, mask_dir, hits, effect, smooth=smooth)
     failed = [r for r in results if r["pass"] is False]
     return {"export": str(export), "sha256": _sha256(export), "effect": effect, "checked_seconds": round(time.time() - t0, 1),
             "passed": not failed, "failed": [r["name"] for r in failed], "checks": results,

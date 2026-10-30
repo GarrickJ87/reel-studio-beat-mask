@@ -20,6 +20,20 @@ def _load_mask(mask_dir: Path, i: int, shape) -> np.ndarray | None:
     return m
 
 
+def temporal_vote(recent: list, m: np.ndarray | None, smooth: int) -> np.ndarray | None:
+    """Majority vote of this mask with the previous `smooth` masks (0 = unchanged).
+
+    Shared by the renderer and the export verification, so the checks judge the exact masks
+    the effect was drawn with. `recent` is the caller's buffer of past masks.
+    """
+    if not smooth or m is None:
+        return m
+    recent.append(m > 0)
+    recent[:] = recent[-(smooth + 1):]
+    votes = np.sum(recent, axis=0)
+    return np.where(votes * 2 > len(recent), 255, 0).astype(np.uint8)
+
+
 def _bbox(mask: np.ndarray, margin: int, shape) -> tuple[int, int, int, int]:
     ys, xs = np.nonzero(mask)
     h, w = shape
@@ -60,11 +74,7 @@ def render(clip: Path, mask_dir: Path, track: Path, hits: list[float], effect: s
                 break
             t = i / fps
             m = _load_mask(mask_dir, i, frame.shape[:2])
-            if smooth and m is not None:
-                recent.append(m > 0)
-                recent[:] = recent[-(smooth + 1):]
-                votes = np.sum(recent, axis=0)
-                m = np.where(votes * 2 > len(recent), 255, 0).astype(np.uint8)
+            m = temporal_vote(recent, m, smooth)
             env, hit_idx = effects.envelope(t, hits, decay=decay)
             if m is not None and m.any():
                 kw = {"hit_index": hit_idx}
