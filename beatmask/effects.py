@@ -73,16 +73,18 @@ def stutter(frame, soft, env, held=None, **_):
         return frame
     hf, hs = held
     out = _blend(frame, hf, hs)
-    shift = int(6 + 18 * env)
+    shift = int(14 + 36 * env)  # wide enough to read even when the subject is standing still
     b, g, r = cv2.split(hf)
     M1 = np.float32([[1, 0, shift], [0, 1, 0]])
     M2 = np.float32([[1, 0, -shift], [0, 1, 0]])
     h, w = hs.shape
     r_s = cv2.warpAffine(r, M1, (w, h)); b_s = cv2.warpAffine(b, M2, (w, h))
     hs_r = cv2.warpAffine(hs, M1, (w, h)); hs_b = cv2.warpAffine(hs, M2, (w, h))
+    # keep the split inside the subject's outline: the background is never touched
+    wr, wb = hs_r * hs * 0.8 * env, hs_b * hs * 0.8 * env
     ghost = out.astype(np.float32)
-    ghost[..., 2] = ghost[..., 2] * (1 - hs_r * 0.6 * env) + r_s * hs_r * 0.6 * env
-    ghost[..., 0] = ghost[..., 0] * (1 - hs_b * 0.6 * env) + b_s * hs_b * 0.6 * env
+    ghost[..., 2] = ghost[..., 2] * (1 - wr) + r_s * wr
+    ghost[..., 0] = ghost[..., 0] * (1 - wb) + b_s * wb
     return ghost.clip(0, 255).astype(np.uint8)
 
 

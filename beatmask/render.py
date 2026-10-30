@@ -46,7 +46,7 @@ def render(clip: Path, mask_dir: Path, track: Path, hits: list[float], effect: s
     if effect not in effects.APPLY:
         raise ValueError(f"effect must be one of {effects.EFFECTS}")
     decay = decay or {"glow": 0.22, "flash": 0.16, "stutter": 0.20}[effect]
-    hold_frames = 4  # stutter: how many frames the subject stays frozen
+    hold_frames = 6  # stutter: how many frames the subject stays frozen (0.2 s at 30 fps)
     fn = effects.APPLY[effect]
 
     cap = cv2.VideoCapture(str(clip))

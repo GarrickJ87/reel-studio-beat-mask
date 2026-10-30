@@ -79,3 +79,24 @@ Day 3 (Agents 102): check the work before it ships, inside the step that ships i
 - Real exports: glow 6/6 PASS, flash 6/6 PASS. Negative control: the glow export judged against the snare beats FAILS "effect lands on every claimed beat".
 - Stutter: beat check is SKIPPED (honestly reported) because a freeze is only measurable when the subject moves.
 - Not done: an LLM-as-judge layer (Muse Spark looking at sampled frames) - possible stretch, would add a Meta model.
+
+## Thu Oct 29 — schedule: color flash + stutter, all 3 effects clean on 3 test clips
+
+**Result: 9/9 exports pass verification on attempt 1.**
+
+| Clip | Glow (kicks) | Flash (snares) | Stutter (beats) |
+|---|---|---|---|
+| 1, plain wall, 6.8 s (`media/garrick_clip.mp4`) | PASS 8/8 (Oct 28, signed off) | PASS 5/5 (Oct 28, signed off) | PASS 12/12 |
+| 2, cap, 12 s (`media/test_clip2_cap.mp4`, new footage) | PASS 13/13 | PASS 10/10 | PASS 29/29 |
+| 3, hands, 12 s (`media/test_clip3_hands.mp4`, new footage) | PASS 13/13 | PASS 8/8 | PASS 15/15 |
+
+Tracks: Garrick Jordan, "Playing in the Hallway" (clips 1 and 3) and "Laws of Gravity" (clip 2).
+
+**Built / changed**
+- Stutter made readable: 6-frame hold (was 4), wider and stronger color split (14-50 px, was 6-24), and the split now stays inside the subject's outline. Before, it was measurable but hard to see on a still subject, and the wider split leaked onto the background (background check passed at exactly its 95% limit).
+- Ahead of Friday's flicker task: verification now judges the same temporally smoothed masks the renderer draws with (`render.temporal_vote`), so a retry with smoothing can actually fix a flicker failure. Test `tests/test_smoothing_verify.py`; 27 tests pass.
+
+**Broke / learned (the verification layer earned its keep)**
+- Clip 3 first failed on all three effects, escalated after 3 attempts: "largest centroid jump ~180 px". Cause: the tap was on the face, so SAM tracked only the head, and at frames 60, 107 and 137 it pulled a raised hand into the mask. The glow would have flickered onto a hand for a few frames. Re-tapping on the shirt made SAM track the whole upper body: largest jump 8 px, all three effects pass. The app's tap hint now says to tap the body or shirt, not just the face.
+
+**Next (Fri Oct 30):** timing sync check, render speed; Sat: UI pass + stranger test.
