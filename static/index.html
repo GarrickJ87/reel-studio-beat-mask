@@ -59,14 +59,18 @@
   <section>
     <div class="step" id="s1">
       <h2><span class="num">1</span>Load clip + track</h2>
-      <label>Clip (≤30 s, one clear subject)</label><input type="file" id="clip" accept="video/*">
-      <label>Track</label><input type="file" id="track" accept="audio/*,video/*">
+      <label>Clip (≤30 s, one clear subject)</label><input type="file" id="clip" accept="video/*,.mp4,.mov,.m4v">
+      <p class="hint" id="clipInfo"></p>
+      <label>Track</label><input type="file" id="track" accept="audio/*,video/*,.mp3,.m4a,.wav,.aac,.aif,.aiff,.flac,.mp4,.mov">
+      <p class="hint" id="trackInfo"></p>
       <label>Skip into the track (seconds), e.g. 15 to start at the chorus</label><input type="number" id="offset" value="0" min="0" step="0.1">
       <button id="b1">Load</button>
+      <div class="bar" style="margin-top:10px"><i id="bar1"></i></div>
+      <p class="hint" id="s1msg" role="status"></p>
     </div>
     <div class="step off" id="s2">
       <h2><span class="num">2</span>Tap the subject</h2>
-      <p class="hint">Click the middle of the person (their body or shirt, not just the face). SAM 3.1 isolates them and tracks them through the clip.</p>
+      <p class="hint">Tap the middle of the person on the frame (their body or shirt, not just the face; on a phone the frame is below). SAM 3.1 isolates them and tracks them through the clip.</p>
       <button id="b2" disabled>Find subject</button>
     </div>
     <div class="step off" id="s3">
@@ -110,13 +114,41 @@ function started() { t0 = Date.now(); }
 function focusStep(n) { $('s' + n).scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 
 function step(n, state) { const el = $('s' + n); el.classList.toggle('off', state === 'off'); el.classList.toggle('done', state === 'done'); }
-function msg(t, err) { $('msg').textContent = t || ''; $('msg').className = err ? 'err' : ''; }
+// the status line sits under the preview, which is below the steps on a phone: mirror it into step 1 while that is the active step
+function msg(t, err) {
+  $('msg').textContent = t || ''; $('msg').className = err ? 'err' : '';
+  if (!$('s1').classList.contains('done')) { $('s1msg').textContent = t || ''; $('s1msg').style.color = err ? 'var(--err)' : ''; }
+}
+const picked = { clip: null, track: null };
+const mb = n => (n / 1e6).toFixed(1) + ' MB';
+function onPick(kind) {
+  const f = $(kind).files && $(kind).files[0];
+  picked[kind] = f || null;
+  $(kind + 'Info').textContent = f ? `✓ ${f.name} · ${mb(f.size)}` : 'Nothing was picked. Try again; for music, use "Browse" (Files).';
+  $(kind + 'Info').style.color = f ? 'var(--ok)' : 'var(--err)';
+}
+$('clip').addEventListener('change', () => onPick('clip'));
+$('track').addEventListener('change', () => onPick('track'));
 function showImg(src) { $('vid').style.display = 'none'; $('empty').style.display = 'none'; const i = $('img'); i.src = src + '?t=' + Date.now(); i.style.display = 'block'; }
 function showVid(src) { $('img').style.display = 'none'; $('dot').style.display = 'none'; $('empty').style.display = 'none'; const v = $('vid'); v.src = src; v.style.display = 'block'; v.play().catch(() => {}); }
 
+// upload in 8 MB pieces with visible progress (one big request can hit tunnel limits on phone videos)
 async function upload(kind, file) {
-  const r = await fetch(`/api/upload?kind=${kind}&name=${encodeURIComponent(file.name)}`, { method: 'PUT', body: file });
-  if (!r.ok) throw new Error((await r.json()).error || 'upload failed');
+  const CH = 8 * 1024 * 1024;
+  for (let off = 0; off < file.size || off === 0; off += CH) {
+    const url = `/api/upload?kind=${kind}&name=${encodeURIComponent(file.name)}&offset=${off}&total=${file.size}`;
+    let r;
+    try { r = await fetch(url, { method: 'PUT', body: file.slice(off, off + CH) }); }
+    catch (e) { throw new Error(`Upload of the ${kind} failed (network): ${e.message}`); }
+    if (!r.ok) {
+      let why = `HTTP ${r.status}`; try { why = (await r.json()).error || why; } catch (e) {}
+      throw new Error(`Upload of the ${kind} failed: ${why}`);
+    }
+    const done = Math.min(off + CH, file.size);
+    $('bar1').style.width = Math.round(done / Math.max(file.size, 1) * 100) + '%';
+    msg(`Uploading the ${kind}… ${mb(done)} of ${mb(file.size)}`);
+    if (file.size === 0) break;
+  }
 }
 async function post(path, body) {
   const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
@@ -124,10 +156,12 @@ async function post(path, body) {
 }
 
 $('b1').onclick = async () => {
-  const c = $('clip').files[0], t = $('track').files[0];
-  if (!c || !t) return msg('Choose a clip and a track.', true);
+  const c = picked.clip || ($('clip').files && $('clip').files[0]), t = picked.track || ($('track').files && $('track').files[0]);
+  if (!c || !t) return msg(!c && !t ? 'Pick a clip and a track first.' : !c ? 'Pick a clip first.' : 'Pick a track first.', true);
+  if (!c.size || !t.size) return msg('One of the files is empty (0 bytes). Pick it again.', true);
   try { busy = true; started(); $('b1').disabled = true; $('clip').disabled = $('track').disabled = true; msg('Uploading…');
     await upload('clip', c); await upload('track', t);
+    msg('Upload done. Reading your clip…');
     await post('/api/ingest', { track_offset: parseFloat($('offset').value) || 0 });
   } catch (e) { msg(e.message, true); $('b1').disabled = false; $('clip').disabled = $('track').disabled = false; busy = false; }
 };
@@ -142,7 +176,8 @@ $('frame').onclick = e => {
   if (px < 0 || py < 0 || px >= size[0] || py >= size[1]) return;
   tap = [Math.floor(px), Math.floor(py)];
   const d = $('dot'); d.style.left = (e.clientX - r.left) + 'px'; d.style.top = (e.clientY - r.top) + 'px'; d.style.display = 'block';
-  $('b2').disabled = false; msg(`Subject point: ${tap[0]}, ${tap[1]}`);
+  $('b2').disabled = false; msg(`Subject point: ${tap[0]}, ${tap[1]}. Now press Find subject.`);
+  if (window.innerWidth < 820) setTimeout(() => focusStep(2), 500);  // phone: Find subject is above the frame
 };
 
 $('b2').onclick = async () => {
@@ -182,7 +217,10 @@ async function poll() {
       if (j.error) { msg(j.message, true); busy = false; ['b1', 'b2', 'b4'].forEach(b => $(b).disabled = false); }
       else if (j.stage === 'ingest:done') {
         busy = false; size = [s.state.width, s.state.height]; step(1, 'done'); step(2, 'on');
-        showImg('/work/frame0.jpg'); $('frame').classList.add('tappable'); msg('Loaded: ' + j.message + '. Now click the middle of the person on the frame.'); focusStep(2);
+        $('s1msg').textContent = '✓ Loaded'; $('s1msg').style.color = 'var(--ok)';
+        showImg('/work/frame0.jpg'); $('frame').classList.add('tappable'); msg('Loaded: ' + j.message + '. Now tap the middle of the person on the frame.');
+        // on a phone the frame sits below the steps: bring the frame itself into view
+        if (window.innerWidth < 820) $('frame').scrollIntoView({ behavior: 'smooth', block: 'center' }); else focusStep(2);
       } else if (j.stage === 'segment:done') {
         busy = false; step(2, 'done'); step(3, 'on'); step(4, 'on'); $('dot').style.display = 'none';
         showImg('/work/mask_preview.jpg'); msg('Got them: ' + j.message + '. Pick an effect, then Export.'); $('b2').disabled = false; $('b4').disabled = false; focusStep(4);
@@ -190,6 +228,7 @@ async function poll() {
         const f = s.state.last_export_name;
         busy = false; step(4, 'done'); $('b4').disabled = false; showVid('/work/' + f);
         $('dlwrap').innerHTML = `<a class="dl" href="/work/${f}?dl=1">Download ${f}</a>`; msg(j.message); $('b5').style.display = 'block';
+        if (window.innerWidth < 820) $('frame').scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
     if (busy && !j.error && LABEL[j.stage]) {

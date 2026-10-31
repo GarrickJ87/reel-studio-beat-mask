@@ -148,3 +148,13 @@ One video frame at 30 fps is 33 ms: a hit that falls between frames shows on the
 - Live through the app: "make it aggressive" -> stutter on snares 0.9; "dreamy and soft" -> glow on every beat 0.35; empty vibe -> clean error, no API call.
 - Export of the soft plan (glow, beats, 0.35): **verified 6/6**, 13/13 beats. 34 tests pass.
 - Muse Spark is now claimed in `docs/SUBMISSION-DRAFT.md`, because it shipped and was verified.
+
+## Sat Oct 31 (night) — phone upload fix (stranger test on iPhone Safari)
+
+**Report:** on iPhone Safari through the tunnel, both file inputs stayed "no file selected" after picking, and Load did nothing visible. No upload reached the server (none logged after 16:07).
+
+**Root cause, verified in code:** (1) on a phone the page is one column and the only status line (errors, progress) sat under the preview, below all four steps, so Load's "choose a clip and a track" error was off-screen: it looked dead. (2) The page never reacted to a pick, so a failed iOS pick was invisible. (3) The upload was one request with the whole file; Cloudflare's free tunnel caps a request at 100 MB, which a 30 s 4K iPhone video can exceed. **Likely, not verified (no iPhone/simulator here):** the iOS picker not attaching the file under the old `accept` list, or a Photos video still being prepared.
+
+**Fix (`static/index.html`, `server.py`):** status mirrored inside step 1; each pick confirmed on screen ("✓ name · size", or a red "Nothing was picked"); wider `accept` lists (.mov/.m4v/.mp3/.m4a/.wav/.aac/.aif/.flac); upload in 8 MB pieces with a progress bar and the server's error text shown on screen; server accepts offset/total chunks (500 MB cap, out-of-order check, logs each piece); on phones the page scrolls to the frame after load, back to Find subject after the tap, and to the video after export.
+
+**Tested:** 120 MB file in 15 pieces, byte-identical on the server; old single-request upload still works; phone-size browser (Chrome mobile mode, not real Safari): empty Load shows the error under the button, picks confirmed, iPhone-style `IMG_4821.MOV` + wav uploaded and loaded, step 2 unlocked. **Not yet tested on a real iPhone.** The tunnel had stopped (Cloudflare 530), so the tunnel path needs a new link.

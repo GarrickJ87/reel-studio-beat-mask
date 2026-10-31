@@ -3,6 +3,7 @@
 Four steps: 1 upload clip + track  2 tap the subject (SAM 3.1)  3 pick an effect  4 export.
 Standard library only (no web framework), so there is nothing extra to install.
 """
+import hmac
 import json
 import mimetypes
 import os
@@ -47,7 +48,42 @@ def prog(done, total):
     set_job(progress=min(done / max(total, 1), 0.99))
 
 
+# Optional passcode for sharing the app through a temporary tunnel (stranger test). Off unless set.
+PASSCODE = os.environ.get("BEATMASK_PASSCODE", "")
+MAX_UPLOAD = 500_000_000  # bytes; a 30 s 4K iPhone clip is well under this
+LOCK_PAGE = b"""<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><title>Beat Mask</title>
+<body style="font:16px -apple-system,sans-serif;background:#0f1216;color:#e7eaee;display:grid;place-items:center;height:100vh;margin:0">
+<form method="get" action="/" style="text-align:center"><h2>Beat Mask</h2><p>Enter the passcode you were given.</p>
+<input name="code" autofocus style="padding:10px;border-radius:8px;border:1px solid #333;font-size:16px">
+<button style="padding:10px 16px;margin-left:6px;border:0;border-radius:8px;background:#ff3fc8;font-weight:600">Open</button></form></body>"""
+
+
 class H(BaseHTTPRequestHandler):
+    def _allowed(self) -> bool:
+        """True when no passcode is set, or the request carries it (cookie, or ?code= on the first visit)."""
+        if not PASSCODE:
+            return True
+        cookie = self.headers.get("Cookie", "")
+        have = next((c.split("=", 1)[1] for c in cookie.split("; ") if c.startswith("bm_pass=")), "")
+        return hmac.compare_digest(have, PASSCODE)
+
+    def _locked(self):
+        u = urlparse(self.path)
+        code = parse_qs(u.query).get("code", [""])[0]
+        if u.path == "/" and code and hmac.compare_digest(code, PASSCODE):
+            self.send_response(303)
+            self.send_header("Set-Cookie", f"bm_pass={PASSCODE}; Path=/; HttpOnly; SameSite=Strict")
+            self.send_header("Location", "/")
+            self.end_headers()
+            return
+        if u.path == "/":
+            self.send_response(200 if not code else 403)
+            self.send_header("Content-Type", "text/html")
+            self.end_headers()
+            self.wfile.write(LOCK_PAGE)
+            return
+        self._json({"error": "passcode required"}, 401)
+
     def log_message(self, *a):
         pass
 
@@ -79,6 +115,8 @@ class H(BaseHTTPRequestHandler):
         return self.rfile.read(n) if n else b""
 
     def do_GET(self):
+        if not self._allowed():
+            return self._locked()
         u = urlparse(self.path)
         if u.path in ("/", "/index.html"):
             return self._file(STATIC / "index.html")
@@ -93,6 +131,8 @@ class H(BaseHTTPRequestHandler):
         return self._json({"error": "not found"}, 404)
 
     def do_PUT(self):
+        if not self._allowed():
+            return self._locked()
         u = urlparse(self.path)
         if u.path != "/api/upload":
             return self._json({"error": "not found"}, 404)
@@ -103,11 +143,29 @@ class H(BaseHTTPRequestHandler):
         ext = Path(q.get("name", ["x.bin"])[0]).suffix.lower()[:6] or ".bin"
         UPLOADS.mkdir(parents=True, exist_ok=True)
         dst = UPLOADS / f"{kind}{ext}"
-        dst.write_bytes(self._body())
-        PROJECT.save_state(**{f"upload_{kind}": str(dst)})
-        return self._json({"ok": True, "path": dst.name, "bytes": dst.stat().st_size})
+        # Chunked: the page sends 8 MB pieces with offset/total, because tunnels (Cloudflare: 100 MB) cap one request.
+        try:
+            offset = int(q.get("offset", ["0"])[0]); total = int(q.get("total", ["-1"])[0])
+        except ValueError:
+            return self._json({"error": "bad offset/total"}, 400)
+        if total > MAX_UPLOAD:
+            return self._json({"error": f"file is {total / 1e6:.0f} MB; the limit is {MAX_UPLOAD / 1e6:.0f} MB. Trim it to 30 s or less."}, 413)
+        have = dst.stat().st_size if dst.exists() and offset else 0
+        if offset != have:
+            return self._json({"error": f"upload out of order (got offset {offset}, have {have}); pick the file again"}, 409)
+        data = self._body()
+        with open(dst, "r+b" if offset else "wb") as f:
+            f.seek(offset)
+            f.write(data)
+        size = dst.stat().st_size
+        print(f"[upload] {kind}{ext}: {offset}+{len(data)} -> {size} of {total} bytes", flush=True)
+        if total < 0 or size >= total:
+            PROJECT.save_state(**{f"upload_{kind}": str(dst)})
+        return self._json({"ok": True, "path": dst.name, "bytes": size, "done": total < 0 or size >= total})
 
     def do_POST(self):
+        if not self._allowed():
+            return self._locked()
         u = urlparse(self.path)
         try:
             data = json.loads(self._body() or b"{}")
