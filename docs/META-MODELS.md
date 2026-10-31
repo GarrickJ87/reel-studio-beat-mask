@@ -25,11 +25,17 @@ Source: Meta Model API docs at dev.meta.ai/docs (SAM overview, Segmenting with p
 - **Cost:** $0.20 per 1,000 video frames, 50-frame minimum per request. A 30 s clip at 30 fps = 900 frames ≈ $0.18.
   Image calls $2.50 per 1,000 images.
 
-## Muse Spark — stretch (not built yet, see MUSE-HANDOFF.md task 3)
+## Muse Spark — vibe to effect plan (`beatmask/vibe.py`, built Oct 31)
 
-Turn a text vibe ("make it aggressive") into an effect plan: which effect, which drum drives it, intensity.
-Model `muse-spark-1.3` over Chat Completions with structured output. Meta's own docs recommend exactly this
-pairing: Muse Spark interprets, SAM 3.1 segments.
+Type a vibe ("make it aggressive") and Muse Spark picks the effect, which drum drives it, and the intensity.
+The plan only pre-selects the controls; the user can change anything before export.
+- **Endpoint:** `POST https://api.meta.ai/v1/chat/completions`, `model: "muse-spark-1.3"`, `reasoning_effort: "low"`,
+  `response_format` = strict JSON schema (effect enum, drive enum, intensity number, why string). Low effort answers in about 4 s.
+- **Input:** a short track summary only (tempo, duration, kick/snare/beat counts), never the beat lists.
+- **Output is validated** (enums checked, intensity clamped to 0-1) before it touches the app; network or API errors become a plain message.
+- **Intensity** maps to 50-100% effect strength in the renderer, so even a soft plan stays visible on the beat; the export is still verified.
+- Live, Oct 31: "make it aggressive" -> stutter on snares, 0.9; "dreamy and soft" -> glow on every beat, 0.35. The soft plan's export passed all 6 checks (13/13 beats).
+Meta's own docs recommend this pairing: Muse Spark interprets, SAM 3.1 segments.
 
 ## Muse Code — used as a coding agent on real tasks
 

@@ -77,7 +77,10 @@ def plan(vibe: str, beatmap: dict, post=None) -> dict:
         },
     }
     headers = {"Authorization": f"Bearer {config.api_key()}"}
-    resp = post(f"{config.BASE_URL}/chat/completions", headers=headers, json=body, timeout=60)
+    try:
+        resp = post(f"{config.BASE_URL}/chat/completions", headers=headers, json=body, timeout=60)
+    except requests.RequestException:
+        raise VibeError("could not reach the Meta Model API")
     if resp.status_code != 200:
         raise VibeError(f"vibe request failed: HTTP {resp.status_code}")
     try:

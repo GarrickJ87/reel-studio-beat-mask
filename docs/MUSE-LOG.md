@@ -14,9 +14,11 @@ Who did what is stated plainly: Claude Code (the builder) wrote and committed mo
 | Oct 27 | SAM 3.1 video, point prompt, forward tracking, synthetic clip | 240/240 frames tracked in 71 s |
 | Oct 28 | SAM 3.1 video on Garrick's real clip (tap on face, frame 0) | 206/206 frames, head, shirt and hand covered, ~40 s |
 | Oct 28 | Full pipeline, real clip + Garrick Jordan "Playing in the Hallway" | glow on kicks, flash on snares, 1080x1920 export |
+| Oct 31 | Muse Spark (`muse-spark-1.3`, chat completions, strict JSON schema, low effort) probed live, then used in the app | "make it aggressive" -> stutter on snares 0.9; "dreamy and soft" -> glow on beats 0.35, ~4 s per answer |
+| Oct 31 | Export using the Muse Spark plan (glow, every beat, intensity 0.35) | verified 6/6, 13/13 beats |
 
 How SAM 3.1 is used (details in `docs/META-MODELS.md`): file upload, then one request with the tap as a point prompt, streamed back as one mask per frame.
-Not used: Muse Spark (vibe to effect plan) is a stretch goal and is not built; it will only be claimed if it ships.
+Muse Spark: shipped Oct 31 as the vibe -> effect plan (see below and `docs/META-MODELS.md`).
 
 ## Muse Code
 
@@ -34,6 +36,9 @@ Not used: Muse Spark (vibe to effect plan) is a stretch goal and is not built; i
 | Oct 28 | Findings not taken, with reasons: the dilation kernel is already the right size at quarter resolution; a sign-off gate on web downloads would break the clip-to-export flow; the centroid limit (90 px) is above the worst jump measured on the real clip (46 px) | recorded here |
 | Oct 28 | **Muse Code task 2**, branch `muse/verify-tests` (brief `docs/MUSE-TASK-verify-tests.md`): 11 offline tests for `beatmask/verify.py` and the render smoothing (`b791162`) | 11 passed, no app code touched |
 | Oct 28 | Claude's review of task 2: Muse's tests replaced `cv2.VideoCapture` with an ffmpeg-pipe fake because a probe said OpenCV can't read H.264 here. The probe was wrong (it wrote the sample with OpenCV's VideoWriter, which can't write MP4 in this build; reading works). Fixed the probe to make the sample with ffmpeg, so the real reader is tested. Merged (`549c3d3`) | 11/11 still pass on the real code; full suite 25 passed |
+
+| Oct 31 | **Muse Code task 3**, branch `muse/vibe` (brief `docs/MUSE-TASK-vibe.md`): built `beatmask/vibe.py` and 6 offline tests (`d835aeb`) | 6 passed; only its two files + one docs row changed |
+| Oct 31 | Claude's review of task 3: added handling for network errors (timeout / no connection now a plain message, not a crash) + a test; wired the plan into the renderer, server and page | 7/7 vibe tests, full suite 34 passed |
 
 Muse Code's contribution so far: two offline test suites (the first found a real crash), and a review-only pass whose findings hardened the export verification layer. The rest of the app was built by Claude Code under Garrick's direction.
 

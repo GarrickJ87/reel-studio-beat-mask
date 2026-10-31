@@ -107,3 +107,16 @@ def test_empty_vibe_never_calls_api():
     with pytest.raises(VibeError):
         plan("   ", BEATMAP, post=post)
     assert called == []
+
+
+def test_network_failure_raises_vibe_error():
+    """Added in Claude's review: a timeout or dropped connection is a VibeError, not a crash."""
+    import requests as _rq
+    import pytest as _pt
+    from beatmask import vibe as _v
+
+    def boom(*a, **k):
+        raise _rq.ConnectionError("no network")
+
+    with _pt.raises(_v.VibeError):
+        _v.plan("make it aggressive", {"tempo": 120, "duration": 6.8, "kicks": [0], "snares": [], "beats": []}, post=boom)

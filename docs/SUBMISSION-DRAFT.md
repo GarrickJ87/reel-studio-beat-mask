@@ -14,7 +14,7 @@ Hard deadline: Wed Nov 4, 9:00 PM ET / 8:00 PM CT. Freeze Nov 2, target submit N
 | Public repository | https://github.com/GarrickJ87/reel-studio-beat-mask |
 | Demo video (about 3 min, voiceover) | PLACEHOLDER |
 | License | PLACEHOLDER |
-| Meta models and tools used | SAM 3.1 via the Meta Model API (core); Muse Code (coding agent: test suites and a review-only pass) |
+| Meta models and tools used | SAM 3.1 via the Meta Model API (core); Muse Spark via the Meta Model API (vibe -> effect plan); Muse Code (coding agent: test suites, a review-only pass, and the vibe module) |
 
 ## One-liner
 
@@ -44,7 +44,7 @@ Beat-sync tools cut or flash the whole frame. Beat Mask makes the effect play th
 - **SAM 3.1 (Meta Model API):** subject segmentation and video tracking from a single tap; the core of the app. Real clip tracked on 206/206 frames.
 - **Muse Code:** wrote two offline test suites on their own branches (the first found a real crash), and did a review-only pass on the verification layer whose findings hardened it. Also used through Meta's agent workshop (Days 2-3) to build an agent loop and its verification checks.
 - Built by Garrick Jordan with Claude Code and Muse Code as assistants under his direction.
-- Not claimed: Muse Spark (not built in this repo).
+- **Muse Spark (Meta Model API):** type a vibe and it picks the effect, the drum that drives it and the intensity (structured JSON output, validated). Built Oct 31 by Muse Code on its own branch, reviewed and wired in by Claude Code; verified live and through a 6/6 export.
 
 ## Before submitting (Garrick)
 

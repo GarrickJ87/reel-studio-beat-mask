@@ -76,6 +76,10 @@
         <label><input type="radio" name="fx" value="flash"><span>Color flash</span></label>
         <label><input type="radio" name="fx" value="stutter"><span>Stutter</span></label>
       </div>
+      <label>Or describe a vibe (optional), e.g. "make it aggressive"</label>
+      <input type="text" id="vibe" placeholder="dreamy and soft" style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px">
+      <button id="b3" class="ghost">Suggest with Muse Spark</button>
+      <p class="hint" id="vibeWhy"></p>
       <label>Hits on</label>
       <select id="drive"><option value="">Auto (glow→kick, flash→snare, stutter→beat)</option>
         <option value="kicks">Kicks</option><option value="snares">Snares</option><option value="beats">Every beat</option></select>
@@ -97,7 +101,7 @@
 </main>
 <script>
 const $ = id => document.getElementById(id);
-let tap = null, size = [1080, 1920], busy = false, lastStage = '', t0 = 0;
+let tap = null, size = [1080, 1920], busy = false, lastStage = '', t0 = 0, intensity = 1;
 // what each long step is doing, in plain words, and roughly how long it takes on a laptop
 const LABEL = { ingest: ['Reading your clip and finding the kicks and snares', '1-2 min the first time'],
                 segment: ['SAM 3.1 is finding and tracking your subject', 'about 1 min'],
@@ -147,11 +151,23 @@ $('b2').onclick = async () => {
   catch (e) { msg(e.message, true); $('b2').disabled = false; busy = false; }
 };
 
+$('b3').onclick = async () => {
+  const v = $('vibe').value.trim(); if (!v) return msg('Type a vibe first, e.g. "make it aggressive".', true);
+  try { $('b3').disabled = true; msg('Muse Spark is reading the vibe…');
+    const { plan } = await post('/api/vibe', { vibe: v });
+    document.querySelector(`input[name=fx][value=${plan.effect}]`).checked = true;
+    $('drive').value = plan.drive; intensity = plan.intensity;
+    $('vibeWhy').textContent = `Muse Spark: ${plan.effect} on ${plan.drive}, strength ${Math.round(plan.intensity * 100)}%. ${plan.why}`;
+    msg('Suggestion applied. Change anything you like, then Export.');
+  } catch (e) { msg(e.message, true); } finally { $('b3').disabled = false; }
+};
+document.querySelectorAll('input[name=fx]').forEach(r => r.addEventListener('change', () => { intensity = 1; $('vibeWhy').textContent = ''; }));
+
 $('b5').onclick = async () => { try { await post('/api/reset'); } catch (e) {} location.reload(); };
 
 $('b4').onclick = async () => {
   const fx = document.querySelector('input[name=fx]:checked').value;
-  try { busy = true; started(); $('b4').disabled = true; msg('Rendering…'); await post('/api/export', { effect: fx, drive: $('drive').value }); }
+  try { busy = true; started(); $('b4').disabled = true; msg('Rendering…'); await post('/api/export', { effect: fx, drive: $('drive').value, intensity }); }
   catch (e) { msg(e.message, true); $('b4').disabled = false; busy = false; }
 };
 

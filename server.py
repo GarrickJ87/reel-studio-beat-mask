@@ -135,11 +135,23 @@ class H(BaseHTTPRequestHandler):
                     s = pipeline.segment_subject(PROJECT, x, y, kind, progress=prog)
                     return f"{s['segmenter']}: subject found on {s['mask_frames']}/{s['frames']} frames ({s['segment_seconds']}s)"
                 run_job("segment", go)
+            elif u.path == "/api/vibe":
+                # Muse Spark turns a typed vibe into an effect plan; quick (~4 s), so it answers directly
+                from beatmask import vibe
+                if not PROJECT.beatmap.exists():
+                    return self._json({"error": "load a clip and a track first"}, 400)
+                try:
+                    plan = vibe.plan(str(data.get("vibe", "")), json.loads(PROJECT.beatmap.read_text()))
+                except vibe.VibeError as e:
+                    return self._json({"error": str(e)}, 400)
+                PROJECT.save_state(vibe_plan=plan)
+                return self._json({"ok": True, "plan": plan})
             elif u.path == "/api/export":
                 eff = data.get("effect", "glow")
                 drive = data.get("drive") or None
+                intensity = float(data.get("intensity", 1.0) or 1.0)
                 def go():
-                    out = pipeline.export(PROJECT, eff, drive, progress=prog)
+                    out = pipeline.export(PROJECT, eff, drive, progress=prog, intensity=intensity)
                     PROJECT.save_state(last_export_name=out.name)
                     r = json.loads(Path(str(out) + ".verify.json").read_text())
                     checks = [c for c in r["checks"] if c["pass"] is not None]

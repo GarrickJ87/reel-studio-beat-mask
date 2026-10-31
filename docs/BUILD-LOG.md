@@ -140,3 +140,11 @@ One video frame at 30 fps is 33 ms: a hit that falls between frames shows on the
 - Export uses the Mac hardware H.264 encoder (`h264_videotoolbox`, 12 Mbps) when this ffmpeg has it, else libx264 as before (`config.video_encoder_args`, override with `BEATMASK_ENCODER=libx264`).
 - Result under the same load: render 176 -> 152 s (-14%), verification still 6/6 PASS; files are about 2x larger (12 Mbps). 27 tests pass.
 - Honest bottom line: the 2-minute stranger-test target is not reachable on this Mac by encoder changes alone; the glow math (~650 ms/frame under load) dominates.
+
+## Sat Oct 31 (evening) — stretch goal: Muse Spark vibe -> effect plan (pulled forward from Sun Nov 1)
+
+- Probed the API live first: `POST /v1/chat/completions`, `muse-spark-1.3`, strict JSON schema works; `reasoning_effort: low` answers in ~4 s with half the reasoning tokens of the default.
+- **Muse Code** built `beatmask/vibe.py` + 6 offline tests on branch `muse/vibe` from a brief with those facts (`d835aeb`), touching nothing else. Claude reviewed it, added network-error handling + a test, and wired it in: render `intensity` (0-1 -> 50-100% strength), `pipeline.export(intensity=)`, `/api/vibe`, and a "Describe a vibe" box with "Suggest with Muse Spark" in step 3 (it pre-selects; the user can still change anything).
+- Live through the app: "make it aggressive" -> stutter on snares 0.9; "dreamy and soft" -> glow on every beat 0.35; empty vibe -> clean error, no API call.
+- Export of the soft plan (glow, beats, 0.35): **verified 6/6**, 13/13 beats. 34 tests pass.
+- Muse Spark is now claimed in `docs/SUBMISSION-DRAFT.md`, because it shipped and was verified.

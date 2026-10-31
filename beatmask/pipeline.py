@@ -63,7 +63,7 @@ def segment_subject(p: Project, x: int, y: int, kind: str = "auto", progress=Non
 
 
 def export(p: Project, effect: str, drive: str | None = None, out: Path | None = None,
-           progress=None) -> Path:
+           progress=None, intensity: float = 1.0) -> Path:
     """Render + export. The export is always verified before it is returned (there is no switch to skip it):
     on failure it is re-rendered with stronger mask smoothing (MAX_ATTEMPTS attempts), then escalated."""
     st = p.state()
@@ -75,9 +75,10 @@ def export(p: Project, effect: str, drive: str | None = None, out: Path | None =
     for attempt in range(MAX_ATTEMPTS):
         smooth = attempt  # attempt 1: raw masks, 2: vote over 2 frames, 3: vote over 3 frames
         render.render(p.clip, p.masks, Path(st["track_src"]), hits, effect, out,
-                      audio_offset=st.get("track_offset", 0.0), progress=progress, smooth=smooth)
+                      audio_offset=st.get("track_offset", 0.0), progress=progress, smooth=smooth,
+                      intensity=intensity)
         report = verify.verify_export(p.clip, out, p.masks, hits, effect, smooth=smooth)
-        report.update(attempt=attempt + 1, smoothing_frames=smooth)
+        report.update(attempt=attempt + 1, smoothing_frames=smooth, intensity=intensity)
         Path(str(out) + ".verify.json").write_text(json.dumps(report, indent=1))
         if report["passed"]:
             break

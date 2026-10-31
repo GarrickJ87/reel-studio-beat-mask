@@ -41,9 +41,12 @@ def _bbox(mask: np.ndarray, margin: int, shape) -> tuple[int, int, int, int]:
 
 
 def render(clip: Path, mask_dir: Path, track: Path, hits: list[float], effect: str, out: Path,
-           audio_offset: float = 0.0, decay: float | None = None, progress=None, smooth: int = 0) -> Path:
+           audio_offset: float = 0.0, decay: float | None = None, progress=None, smooth: int = 0,
+           intensity: float = 1.0) -> Path:
     if effect not in effects.APPLY:
         raise ValueError(f"effect must be one of {effects.EFFECTS}")
+    # intensity 0..1 (from a vibe plan) maps to 50-100% strength, so even a soft plan stays visible on the beat
+    strength = 0.5 + 0.5 * min(max(float(intensity), 0.0), 1.0)
     decay = decay or {"glow": 0.22, "flash": 0.16, "stutter": 0.20}[effect]
     hold_frames = 6  # stutter: how many frames the subject stays frozen (0.2 s at 30 fps)
     fn = effects.APPLY[effect]
@@ -93,7 +96,7 @@ def render(clip: Path, mask_dir: Path, track: Path, hits: list[float], effect: s
                         hf, hm = kw["held"]
                         kw["held"] = (hf[y0:y1, x0:x1], effects.feather(hm[y0:y1, x0:x1]))
                     frame = frame.copy()
-                    frame[y0:y1, x0:x1] = fn(crop, soft, env, **kw)
+                    frame[y0:y1, x0:x1] = fn(crop, soft, env * strength, **kw)
             proc.stdin.write(frame.tobytes())
             i += 1
             if progress and i % 15 == 0:
