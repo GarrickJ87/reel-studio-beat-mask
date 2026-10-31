@@ -100,3 +100,23 @@ Tracks: Garrick Jordan, "Playing in the Hallway" (clips 1 and 3) and "Laws of Gr
 - Clip 3 first failed on all three effects, escalated after 3 attempts: "largest centroid jump ~180 px". Cause: the tap was on the face, so SAM tracked only the head, and at frames 60, 107 and 137 it pulled a raised hand into the mask. The glow would have flickered onto a hand for a few frames. Re-tapping on the shirt made SAM track the whole upper body: largest jump 8 px, all three effects pass. The app's tap hint now says to tap the body or shirt, not just the face.
 
 **Next (Fri Oct 30):** timing sync check, render speed; Sat: UI pass + stranger test.
+
+## Fri Oct 30 — schedule: mask edge flicker, timing sync
+
+**Result: effects land on the beat with no visible lag; audio is sample-accurate.** No code change needed.
+
+- Flicker: done Oct 29 (verification judges the same smoothed masks the render uses; retries can fix flicker).
+- Audio sync, all 9 verified exports: exported audio cross-correlated against the source track at the chosen start point: **0.0 ms offset, match 1.00** on every export.
+- Visual timing, all 9 exports (each hit vs the frame where the effect peaks; stutter vs the frame where the freeze starts, since its difference keeps growing through the hold):
+
+| Clip | Glow (median / max) | Flash (median / max) | Stutter onset (median / max) |
+|---|---|---|---|
+| 1, plain wall | 8 / 29 ms | 22 / 33 ms | 19 / 51 ms |
+| 2, cap | 13 / 27 ms | 25 / 30 ms | 12 / 28 ms |
+| 3, hands | 13 / 27 ms | 15 / 32 ms | 19 / 32 ms |
+
+One video frame at 30 fps is 33 ms: a hit that falls between frames shows on the next frame, which is where these numbers come from. Only one stutter hit reached 1.5 frames (51 ms). All are under the ~45 ms where audio-visual offset becomes noticeable.
+
+- Learned: a first pass reported 118-222 ms "lags"; that was the measuring window catching the next hit's pulse on fast tracks (152 BPM), and stutter measured at its peak instead of its onset. Fixed the measurement, not the render. Raw per-frame numbers cached in `tmp/timing_change_cache.npz`.
+
+**Next (Sat Oct 31):** UI pass (simple 4-step flow) + stranger test: clip to export in under 2 minutes, no help.
