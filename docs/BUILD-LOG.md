@@ -134,3 +134,9 @@ One video frame at 30 fps is 33 ms: a hit that falls between frames shows on the
 **Walked the whole flow in the browser on clip 1** (real SAM 3.1, glow): load 66 s, SAM 130 s (the API varied; 74 s on Oct 28), export + verification 187 s, verified 6/6. Start over returns a clean page.
 
 **Finding for the stranger test ("clip to export in under 2 minutes"):** the clicks take under a minute, but the processing on this Intel Mac is about 6 minutes in total, so the 2-minute target fails on wait time alone. Options are Garrick's call: hardware video encoder (`h264_videotoolbox`), shorter test clip, or accept and say so.
+
+**Render speed (same day):** measured before changing anything. Export of clip 1 (206 frames): render 176 s + verification 94 s. Encoding alone was only 33 s of that (20 s with the Mac hardware encoder), so the encoder is not the bottleneck: the per-frame effect math is, and the Mac was under heavy load from other apps (load average ~40 on 4 cores) during the measurement.
+- `render._bbox` now uses OpenCV `boundingRect` instead of `np.nonzero`: identical box (checked), ~165 ms -> a few ms per frame.
+- Export uses the Mac hardware H.264 encoder (`h264_videotoolbox`, 12 Mbps) when this ffmpeg has it, else libx264 as before (`config.video_encoder_args`, override with `BEATMASK_ENCODER=libx264`).
+- Result under the same load: render 176 -> 152 s (-14%), verification still 6/6 PASS; files are about 2x larger (12 Mbps). 27 tests pass.
+- Honest bottom line: the 2-minute stranger-test target is not reachable on this Mac by encoder changes alone; the glow math (~650 ms/frame under load) dominates.

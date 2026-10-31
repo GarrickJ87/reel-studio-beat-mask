@@ -38,5 +38,24 @@ def ffmpeg() -> str:
     return os.environ.get("FFMPEG_PATH", "ffmpeg")
 
 
+_ENCODER = None
+
+
+def video_encoder_args() -> list[str]:
+    """Mac hardware H.264 encoder when this ffmpeg has it (faster on a laptop), else libx264."""
+    global _ENCODER
+    if _ENCODER is None:
+        import subprocess
+        try:
+            out = subprocess.run([ffmpeg(), "-hide_banner", "-encoders"], capture_output=True, text=True, timeout=20).stdout
+        except (OSError, subprocess.SubprocessError):
+            out = ""
+        want = os.environ.get("BEATMASK_ENCODER", "auto")
+        _ENCODER = "h264_videotoolbox" if want != "libx264" and "h264_videotoolbox" in out else "libx264"
+    if _ENCODER == "h264_videotoolbox":
+        return ["-c:v", "h264_videotoolbox", "-b:v", "12M", "-allow_sw", "1"]
+    return ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20"]
+
+
 def ffprobe() -> str:
     return os.environ.get("FFPROBE_PATH", "ffprobe")
