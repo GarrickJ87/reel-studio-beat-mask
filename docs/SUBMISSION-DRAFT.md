@@ -6,14 +6,14 @@ Hard deadline: Wed Nov 4, 9:00 PM ET / 8:00 PM CT. Freeze Nov 2, target submit N
 
 | Field | Value |
 |---|---|
-| Team name | PLACEHOLDER |
+| Team name | Reel Studio |
 | Contributors | Garrick Jordan (solo) |
 | Track | Indie Developer Track |
 | Problem statement / theme | Build for Your World |
 | Project name | Beat Mask (a Reel Studio module) |
 | Public repository | https://github.com/GarrickJ87/reel-studio-beat-mask |
 | Demo video (about 3 min, voiceover) | PLACEHOLDER |
-| License | PLACEHOLDER |
+| License | MIT (`LICENSE`, copyright Garrick Jordan) |
 | Meta models and tools used | SAM 3.1 via the Meta Model API (core); Muse Spark via the Meta Model API (vibe -> effect plan); Muse Code (coding agent: test suites, a review-only pass, and the vibe module) |
 
 ## One-liner
@@ -48,7 +48,8 @@ Beat-sync tools cut or flash the whole frame. Beat Mask makes the effect play th
 
 ## Before submitting (Garrick)
 
-- [ ] Team name, demo video link, license filled in above
+- [x] Team name (Reel Studio) and license (MIT) filled in, confirmed by Garrick
+- [ ] Demo video link filled in above
 - [ ] Demo video uploaded somewhere judges can open it (for example unlisted YouTube or Vimeo)
 - [ ] Final read of README and this text
 - [ ] Final yes
