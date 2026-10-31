@@ -120,3 +120,17 @@ One video frame at 30 fps is 33 ms: a hit that falls between frames shows on the
 - Learned: a first pass reported 118-222 ms "lags"; that was the measuring window catching the next hit's pulse on fast tracks (152 BPM), and stutter measured at its peak instead of its onset. Fixed the measurement, not the render. Raw per-frame numbers cached in `tmp/timing_change_cache.npz`.
 
 **Next (Sat Oct 31):** UI pass (simple 4-step flow) + stranger test: clip to export in under 2 minutes, no help.
+
+## Sat Oct 31 — schedule: UI pass (simple 4-step flow)
+
+**Changed (web app only, `static/index.html`, `server.py`)**
+- Plain-English progress with expected time and a running seconds counter, instead of raw stage names ("ingest… 40%"): e.g. "SAM 3.1 is finding and tracking your subject… 99% · 34s (usually about 1 min)".
+- After each step, the status says what to do next ("Now click the middle of the person…", "Pick an effect, then Export") and the page scrolls to the next step, so Export is never hidden below the fold.
+- Clearer wording: "Skip into the track (seconds), e.g. 15 to start at the chorus". Export hint says the app checks its own export.
+- Inactive steps are clearly greyed out; Export is disabled until a subject is found; file pickers lock while a job runs.
+- "Start over" button after export, backed by a new `/api/reset` (refuses while a job is running), so the old export doesn't reappear on reload.
+- Empty preview text centered.
+
+**Walked the whole flow in the browser on clip 1** (real SAM 3.1, glow): load 66 s, SAM 130 s (the API varied; 74 s on Oct 28), export + verification 187 s, verified 6/6. Start over returns a clean page.
+
+**Finding for the stranger test ("clip to export in under 2 minutes"):** the clicks take under a minute, but the processing on this Intel Mac is about 6 minutes in total, so the 2-minute target fails on wait time alone. Options are Garrick's call: hardware video encoder (`h264_videotoolbox`), shorter test clip, or accept and say so.

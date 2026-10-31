@@ -115,6 +115,11 @@ class H(BaseHTTPRequestHandler):
             return self._json({"error": "bad json"}, 400)
         st = PROJECT.state()
         try:
+            if u.path == "/api/reset":
+                if JOB["stage"] in ("ingest", "segment", "export"):
+                    return self._json({"error": "a job is still running"}, 409)
+                set_job(stage="idle", progress=0.0, message="", error=None)
+                return self._json({"ok": True})
             if u.path == "/api/ingest":
                 if not st.get("upload_clip") or not st.get("upload_track"):
                     return self._json({"error": "upload a clip and a track first"}, 400)
