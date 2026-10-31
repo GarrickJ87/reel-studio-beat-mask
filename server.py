@@ -124,6 +124,13 @@ class H(BaseHTTPRequestHandler):
             st = PROJECT.state()
             return self._json({"job": JOB, "state": st, "has_key": bool(config.api_key()),
                                "effects": list(effects.EFFECTS), "default_drive": effects.DEFAULT_DRIVE})
+        if u.path == "/api/upload-check":
+            q = parse_qs(u.query)
+            kind, fid = q.get("kind", [""])[0], q.get("id", [""])[0]
+            st = PROJECT.state()
+            path = st.get(f"upload_{kind}")
+            have = bool(fid) and st.get(f"upload_{kind}_id") == fid and bool(path) and Path(path).exists()
+            return self._json({"have": have})
         if u.path.startswith("/work/"):
             name = Path(u.path[len("/work/"):]).name  # no path traversal: file names only
             q = parse_qs(u.query)
@@ -160,7 +167,8 @@ class H(BaseHTTPRequestHandler):
         size = dst.stat().st_size
         print(f"[upload] {kind}{ext}: {offset}+{len(data)} -> {size} of {total} bytes", flush=True)
         if total < 0 or size >= total:
-            PROJECT.save_state(**{f"upload_{kind}": str(dst)})
+            # remember which file this was (name|size|modified), so pressing Load again can skip re-sending it
+            PROJECT.save_state(**{f"upload_{kind}": str(dst), f"upload_{kind}_id": q.get("id", [""])[0]})
         return self._json({"ok": True, "path": dst.name, "bytes": size, "done": total < 0 or size >= total})
 
     def do_POST(self):

@@ -135,8 +135,13 @@ function showVid(src) { $('img').style.display = 'none'; $('dot').style.display 
 // upload in 8 MB pieces with visible progress (one big request can hit tunnel limits on phone videos)
 async function upload(kind, file) {
   const CH = 8 * 1024 * 1024;
+  const id = `${file.name}|${file.size}|${file.lastModified || 0}`;
+  try {  // the same file is already on the server (e.g. Load pressed twice): don't send it again
+    const c = await (await fetch(`/api/upload-check?kind=${kind}&id=${encodeURIComponent(id)}`)).json();
+    if (c.have) { $('bar1').style.width = '100%'; msg(`The ${kind} is already uploaded. Skipping.`); return; }
+  } catch (e) { /* check failed: just upload */ }
   for (let off = 0; off < file.size || off === 0; off += CH) {
-    const url = `/api/upload?kind=${kind}&name=${encodeURIComponent(file.name)}&offset=${off}&total=${file.size}`;
+    const url = `/api/upload?kind=${kind}&name=${encodeURIComponent(file.name)}&offset=${off}&total=${file.size}&id=${encodeURIComponent(id)}`;
     let r;
     try { r = await fetch(url, { method: 'PUT', body: file.slice(off, off + CH) }); }
     catch (e) { throw new Error(`Upload of the ${kind} failed (network): ${e.message}`); }
