@@ -46,6 +46,31 @@ Beat-sync tools cut or flash the whole frame. Beat Mask makes the effect play th
 - Built by Garrick Jordan with Claude Code and Muse Code as assistants under his direction.
 - **Muse Spark (Meta Model API):** type a vibe and it picks the effect, the drum that drives it and the intensity (structured JSON output, validated). Built Oct 31 by Muse Code on its own branch, reviewed and wired in by Claude Code; verified live and through a 6/6 export.
 
+## Muse inventory (verified Nov 3, 2026 against git history, files, test runs and live calls)
+
+**Claimed. What it is, what Beat Mask used it for, evidence:**
+
+| Item | What Beat Mask used it for | Evidence |
+|---|---|---|
+| **Meta Model API** (`api.meta.ai/v1`) | The hosted API every Meta call goes through | Live calls Nov 3: `scripts/sam_smoke_test.py` ("key works", `MILESTONE MET`) and the app's `/api/vibe` |
+| **SAM 3.1** via the Meta Model API | Point-prompt segmentation, tracked forward through every frame (`beatmask/segment.py`) | Nov 3 smoke test: 1 mask, 6.5% of frame; real-clip tracking 206/206 and 361/361 frames in `docs/BUILD-LOG.md`; exports verified 6/6 |
+| **Muse Spark** (`muse-spark-1.3`, chat completions, strict JSON schema) | Turns a typed vibe into an effect plan (effect, drum, intensity) (`beatmask/vibe.py`) | Commits `d835aeb`, `48d802d`; 7 tests; live call Nov 3 through the app; an export from a Muse Spark plan verified 6/6 on Oct 31 |
+| **Muse Code**, test suites | Offline tests on their own branches | `dca2e11` (10 passed, 1 expected failure; found a real crash), `b791162` merged `549c3d3` (11 tests); full suite re-run Nov 3: 34 passed |
+| **Muse Code**, vibe module | Wrote `beatmask/vibe.py` and its tests | `d835aeb` on branch `muse/vibe` |
+| **Muse Code**, review-only pass | Review of the export verification layer; findings applied on main | `122ff06` (verification always runs, retries fixed at 3, sign-off bound to the export's file hash, every beat must show the effect, stutter measured against the clip's own off-beat change, real frame rate, no-beat and no-consecutive-mask handling, `--out` stays inside the project) |
+| **Muse Code**, Meta workshop runs | Built the agent loop and both verification checks in the workshop repo | `run-20261029T004734Z-f97797` (Session 1), `run-20261029T010752Z-538a77` (Session 2, approved by Garrick, status done); logged in `25de9f1` |
+| Oct 27 code review of the repo at `be1337c` | Review by Muse (chat assistant), recorded in `docs/MUSE-LOG.md` | Re-checked Nov 3: all Python compiles, no key, no `.env` at that commit |
+
+Evidence files: `docs/MUSE-LOG.md`, `docs/META-MODELS.md` (Muse Code table, 5 rows).
+
+**Workshop context only, not a model in the product:** Days 1-3 of the hackathon workshops (Muse Code, Meta Model API setup, verifiable-agent checks) shaped the export verification layer.
+
+**OPEN, not claimed until recorded:**
+- The "$150 free credits in use" state: live calls with the key in `.env` work, but the credit balance and usage were not confirmed for that key. Garrick to confirm in the Meta dashboard.
+- Whether the demo video shows Muse use and the app running itself: no candidate video exists yet to check.
+
+**NOT USED, do not claim:** Muse Wonder, Muse Image, Muse Voice Transcribe, Muse Glimmer, Muse Spark Open. (`.env.example` has an unused `MUSE_CODE_MODEL` slot; no product code reads it.) The Fireworks / open-models tryout was a separate workshop experiment and was never run.
+
 ## Before submitting (Garrick)
 
 - [x] Team name (Reel Studio) and license (MIT) filled in, confirmed by Garrick

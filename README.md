@@ -14,6 +14,19 @@ Built for the Meta Global AI Developer Hackathon (Indie track, "Build for Your W
 - The sample clip and the music are the author's own (Garrick Jordan).
 - Built by Garrick Jordan with Claude Code and Muse Code as assistants under his direction. See `docs/MUSE-LOG.md` for exactly where Meta's models and tools were used.
 
+## Meta tooling used (checked Nov 3, 2026)
+
+**Used in Beat Mask, with evidence** (details and run IDs: `docs/MUSE-LOG.md`, `docs/META-MODELS.md`):
+
+- **Meta Model API** (`api.meta.ai/v1`): the hosted API the app calls. Live calls re-run on Nov 3 (`scripts/sam_smoke_test.py`, and the app's vibe call).
+- **SAM 3.1** (`beatmask/segment.py`): one tap becomes a mask tracked forward through every frame. Nov 3 live call: 1 mask covering 6.5% of the frame (`MILESTONE MET`); real clips tracked on 206/206 and 361/361 frames.
+- **Muse Spark** (`beatmask/vibe.py`, model `muse-spark-1.3`): turns a typed vibe into an effect plan (which effect, which drum drives it, how strong), as validated structured JSON. 7 tests; live call re-run Nov 3 through the app.
+- **Muse Code**: two offline test suites on their own branches (`dca2e11`, `b791162`), the vibe module (`d835aeb`), a review-only pass whose findings were applied on main (`122ff06`), and the two Meta workshop agent runs (`run-20261029T004734Z-f97797`, `run-20261029T010752Z-538a77`, logged in `25de9f1`).
+
+**Workshop context only (not a model in the product):** the hackathon workshops (Muse Code, Meta Model API setup, verifiable-agent checks) shaped the export verification layer.
+
+**Not used in Beat Mask, not claimed:** Muse Wonder, Muse Image, Muse Voice Transcribe, Muse Glimmer, Muse Spark Open. (`.env.example` has an unused `MUSE_CODE_MODEL` slot; no product code reads it.) The Fireworks / open-models workshop tryout was a separate experiment and was never run.
+
 ## How it works
 
 | Stage | What happens | Tech |
