@@ -26,7 +26,7 @@ Do not assemble the final cut until Garrick sends the file names of T2-T6. Raw t
 - [ ] Captions for the voiceover lines
 - [ ] End card: "Beat Mask, a Reel Studio module" / Meta SAM 3.1 via the Meta Model API / built with Muse Code / Indie Developer Track, Build for Your World / repo link
 - [ ] Credit line names Garrick Jordan only
-- [ ] Only work built Oct 26 - Nov 4 is shown; no claim of Muse Spark
+- [ ] Only work built Oct 26 - Nov 4 is shown. Muse Spark (the vibe -> effect plan, `beatmask/vibe.py`) ships in the repo and is claimed in the README and submission draft, so mention it in the demo only if the vibe box is actually shown; do not claim any other Muse model (Wonder, Image, Voice, Glimmer, Spark Open)
 - [ ] Music only in the final pass (the track is already in T1/T4/T7)
 - [ ] Export 1080p H.264 + AAC, then Garrick watches it in full before upload
 
