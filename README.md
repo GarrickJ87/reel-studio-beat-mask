@@ -31,11 +31,27 @@ Built for the Meta Global AI Developer Hackathon (Indie track, "Build for Your W
 
 | Stage | What happens | Tech |
 |---|---|---|
-| 1. Ingest | Clip normalized to 1080×1920, 30 fps, ≤30 s; track decoded | ffmpeg |
-| 2. Segment | User taps the subject on frame 1 → **SAM 3.1** segments it and tracks it through every frame | Meta Model API `sam-3.1` (point prompt, forward tracking) |
-| 3. Beat map | Kicks (<150 Hz) and snares (1.5–6 kHz) found by band spectral flux; beats by tempo tracking | librosa |
-| 4. Render | Glow pulse / color flash / stutter applied inside the feathered mask on each hit | OpenCV |
-| 5. Export | H.264 + AAC, 1080×1920, faststart | ffmpeg |
+| 1. Ingest | Clip normalized to 1080×1920, 30 fps, ≤30 s; track decoded | ffmpeg (`beatmask/media.py`) |
+| 2. Segment | User taps the subject on frame 1 → **SAM 3.1** segments it and tracks it through every frame; box-local `one_bit` masks decoded by bit-exact numba range decoder | Meta Model API `sam-3.1` + numba (`beatmask/segment.py`, `beatmask/fastmask.py`) |
+| 3. Beat map | Kicks (<150 Hz) and snares (1.5–6 kHz) found by band spectral flux; beats by tempo tracking with drum-hit grid correction when the tracker disagrees with steady drums | librosa (`beatmask/beats.py`) |
+| 3b. Vibe plan (optional) | User types a text vibe (e.g. `"make it aggressive"`) → **Muse Spark** reads the track summary (tempo, duration, kick/snare/beat counts) and returns a validated JSON plan (`effect`, `drive`, `intensity` in `0..1`, `why`) that pre-selects the UI controls | Meta Model API `muse-spark-1.3`, strict JSON schema (`beatmask/vibe.py`, `POST /api/vibe`) |
+| 4. Render | Glow pulse / color flash / stutter applied only inside the feathered subject mask on each hit (`kicks`, `snares`, `beats`, or `onsets`), with intensity scaling (`50–100%`) and optional temporal majority-vote mask smoothing (`temporal_vote`) | OpenCV (`beatmask/effects.py`, `beatmask/render.py`) |
+| 5. Export + Verify | Encodes 1080×1920 H.264 (`h264_videotoolbox` on Mac when available, else `libx264`) + AAC (`+faststart`), then automatically runs the 3-layer verification check inside `pipeline.export` before returning | ffmpeg + OpenCV (`beatmask/pipeline.py`, `beatmask/verify.py`) |
+
+### Export verification and human sign-off (`beatmask/verify.py`)
+
+Verification runs inside `pipeline.export` on every export (there is no flag to skip it) and writes `<export>.verify.json`:
+
+- **Layer 1 (deterministic, blocking):**
+  - `format 1080x1920 H.264 with audio`: checks `1080×1920` resolution, `h264` video codec, audio stream present, and duration within `0.15 s` of the clip.
+  - `subject present on enough frames`: mask present on `≥90%` of frames.
+  - `background untouched`: `≥95%` of sampled frames have mean pixel change `≤6.0` outside the dilated subject mask.
+  - `effect lands on every claimed beat`: every beat inside the clip must show the effect inside the mask (`glow`/`flash`: peak in-mask change `≥15.0` and `≥3.0×` background change; `stutter`: hit-window change `≥1.5×` median off-beat change).
+- **Layer 2 (judge-style, measured from frames on the same `temporal_vote`-smoothed masks used by the renderer):**
+  - `subject not lost mid-clip`: longest consecutive gap without a mask is `≤6` frames.
+  - `mask does not flicker or slip`: 95th-percentile frame-to-frame relative mask area change `≤12%` and maximum centroid jump `≤90 px`.
+- **Bounded retries + escalation:** if any check fails, the export is refused and `pipeline.export` re-renders with stronger temporal majority-vote mask smoothing (`smooth = 0, 1, 2` across at most `3` attempts). If attempt 3 still fails, `VerificationEscalation` is raised to escalate to a person instead of looping.
+- **Layer 3 (human sign-off):** verified exports start with `"signoff": "pending"`. Nothing is marked approved until human sign-off via `.venv/bin/python -m beatmask.verify signoff <export.mp4>`, which refuses unless verification passed and confirms the file's SHA-256 hash matches `<export>.verify.json` before writing `"approved": true`.
 
 ## Run it
 
@@ -49,20 +65,28 @@ cp .env.example .env            # then paste your Meta Model API key after MODEL
 Command line, no UI:
 
 ```bash
-.venv/bin/python -m beatmask.pipeline --clip my_clip.mov --track odd_wilson.wav --tap 540,900 --effect glow
+.venv/bin/python -m beatmask.pipeline --clip my_clip.mov --track my_track.wav --tap 540,900 --effect glow
+.venv/bin/python -m beatmask.verify signoff tmp/work/cli/beatmask_glow_*.mp4
 ```
 
 No key yet? Add `--segmenter mock` to run the whole loop with a rough offline mask (OpenCV GrabCut).
 It exists only so the rest of the pipeline can be tested; the demo uses SAM 3.1.
 
+Offline test suite (no API key or network needed):
+
+```bash
+.venv/bin/python -m pytest
+```
+
 ## Layout
 
 ```
-beatmask/   config · media (ingest) · segment (SAM 3.1 + fallback) · beats · effects · render · pipeline
-server.py   local web app (standard library only)
-static/     the 4-step UI
-scripts/    sam_smoke_test.py · make_test_media.py
-docs/       BUILD-LOG · META-MODELS · SETUP · MUSE-HANDOFF
+beatmask/   config · media (ingest) · segment (SAM 3.1 + fallback) · fastmask · beats · vibe (Muse Spark) · effects · render · verify (3-layer checks + sign-off) · pipeline
+server.py   local web app (standard library only: upload, ingest, segment, vibe, export, reset)
+static/     the 4-step UI (with optional Muse Spark vibe prompt)
+scripts/    sam_smoke_test.py · make_test_media.py · demo_run.sh
+tests/      offline pytest suite (beats, tempo, effects, segment, render smoothing, verify, vibe, e2e pipeline)
+docs/       BUILD-LOG · META-MODELS · MUSE-LOG · SETUP · MUSE-HANDOFF · SUBMISSION-DRAFT
 ```
 
 © 2026 Garrick Jordan. Released under the MIT License, see `LICENSE`.
